@@ -477,3 +477,126 @@ Các nội dung dưới đây cần được **Business Analyst xác nhận vớ
 | BR44 | Hỗ trợ mở rộng dịch vụ | Kiến trúc hệ thống cho phép bổ sung các loại dịch vụ mới trong tương lai mà không phải xây dựng lại toàn bộ hệ thống. |
 | BR45 | Hỗ trợ mở rộng phương thức thanh toán | Hệ thống cho phép tích hợp thêm phương thức hoặc nhà cung cấp thanh toán trong tương lai. |
 | BR46 | Hỗ trợ mở rộng nhà cung cấp thông báo | Hệ thống cho phép thay đổi hoặc bổ sung nhà cung cấp thông báo mà không ảnh hưởng lớn đến hệ thống hiện tại. |
+
+# B6. Xây dựng Business Process
+
+## BP01. Quy trình đặt chuyến và phân công tài xế
+
+### Mục tiêu
+
+Xây dựng quy trình từ khi khách hàng tạo yêu cầu đặt chuyến cho đến khi hệ thống tìm được và xác nhận tài xế.
+
+### Business Process
+
+```text
+┌──────────────────────┐
+│      Khách hàng      │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│    Tạo chuyến đi     │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│    Nhập điểm đón     │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│    Nhập điểm đến     │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Chọn loại xe / dịch vụ│
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Hệ thống xác nhận    │
+│   yêu cầu đặt xe     │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│   Tìm tài xế phù hợp │
+└──────────┬───────────┘
+           │
+           ▼
+      ┌─────────────┐
+      │ Có tài xế   │
+      │ phù hợp?    │
+      └──────┬──────┘
+        Không│       │Có
+             │       ▼
+             │  ┌──────────────────────┐
+             │  │ Gửi yêu cầu nhận     │
+             │  │ chuyến cho tài xế    │
+             │  └──────────┬───────────┘
+             │             │
+             │             ▼
+             │       ┌─────────────┐
+             │       │ Tài xế phản │
+             │       │    hồi?     │
+             │       └──────┬──────┘
+             │         Không│       │Có
+             │              │       ▼
+             │              │  ┌───────────────┐
+             │              │  │ Tài xế chấp   │
+             │              │  │ nhận chuyến?  │
+             │              │  └───────┬───────┘
+             │              │      Không│     │Có
+             │              │           │     │
+             │              │           ▼     ▼
+             │              │      ┌────────┐ ┌──────────────────┐
+             │              │      │ Tìm tài│ │ Phân công tài xế │
+             │              │      │ xế khác│ │ cho chuyến đi    │
+             │              │      └────┬───┘ └────────┬─────────┘
+             │              │           │              │
+             │              └───────────┘              ▼
+             │                                   ┌───────────────┐
+             │                                   │ Xác nhận chuyến│
+             │                                   │     đi         │
+             │                                   └───────┬───────┘
+             │                                           │
+             │                                           ▼
+             │                                  ┌─────────────────┐
+             │                                  │ Thông báo cho   │
+             │                                  │    khách hàng   │
+             │                                  └───────┬─────────┘
+             │                                           │
+             │                                           ▼
+             │                                  ┌─────────────────┐
+             │                                  │ Chuyến đi được  │
+             │                                  │    xác nhận     │
+             │                                  └─────────────────┘
+             │
+             ▼
+┌─────────────────────────────┐
+│ Thông báo không tìm được    │
+│          tài xế             │
+└──────────────┬──────────────┘
+               │
+               ▼
+┌─────────────────────────────┐
+│ Kết thúc yêu cầu đặt chuyến │
+└─────────────────────────────┘
+```
+Bước	Actor	Hoạt động	Kết quả
+1	Khách hàng	Tạo yêu cầu chuyến đi	Yêu cầu đặt xe được tạo
+2	Khách hàng	Nhập điểm đón	Lưu điểm đón
+3	Khách hàng	Nhập điểm đến	Lưu điểm đến
+4	Khách hàng	Chọn loại xe/dịch vụ	Xác định loại dịch vụ
+5	Hệ thống	Kiểm tra và xác nhận yêu cầu	Yêu cầu hợp lệ được tiếp nhận
+6	Hệ thống	Tìm tài xế phù hợp	Xác định tài xế phù hợp
+7	Hệ thống	Kiểm tra có tài xế phù hợp hay không	Có / Không
+8	Hệ thống	Không tìm thấy tài xế	Thông báo cho khách hàng
+9	Hệ thống	Gửi yêu cầu nhận chuyến cho tài xế	Tài xế nhận được yêu cầu
+10	Tài xế	Chấp nhận / từ chối / không phản hồi	Xác định kết quả
+11	Hệ thống	Tài xế từ chối hoặc không phản hồi	Tìm tài xế tiếp theo
+12	Hệ thống	Không còn tài xế phù hợp	Thông báo khách hàng
+13	Tài xế	Chấp nhận chuyến	Tài xế được phân công
+14	Hệ thống	Xác nhận chuyến đi	Chuyến được xác nhận
+15	Hệ thống	Thông báo cho khách hàng	Khách hàng biết tài xế đã nhận chuyến
