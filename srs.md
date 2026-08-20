@@ -1616,3 +1616,80 @@ Một Business Requirement được xem là **hoàn thành (Done)** khi đáp �
 3. Dữ liệu liên quan được lưu trữ chính xác, nhất quán theo mô hình dữ liệu ở B9.
 4. Không vi phạm các **Non-Functional Requirement** liên quan (bảo mật, phân quyền, audit log — B10).
 5. Đối với các BR liên quan đến nội dung **chưa chốt chính sách** (VD: BR11, BR17, BR23...), BR chỉ được coi là hoàn thành khi đã có xác nhận chính thức từ khách hàng về chính sách và hệ thống triển khai đúng theo chính sách đó — nếu chưa có xác nhận, BR ở trạng thái "Blocked – chờ làm rõ", không được đánh giá là Done.
+
+## B14. MA TRẬN TRUY XUẤT YÊU CẦU (RTM – Requirements Traceability Matrix)
+
+**Mục đích:** RTM giúp truy xuất nguồn gốc và mối liên hệ xuyên suốt giữa **Mục tiêu kinh doanh (BG) → Yêu cầu nghiệp vụ (BR) → Yêu cầu chức năng (FR) → Use Case (UC) → Tiêu chí chấp nhận (AC)**, đảm bảo mọi yêu cầu đều được thiết kế, xây dựng và kiểm thử đầy đủ, không bị bỏ sót hoặc dư thừa.
+
+```text
+BG (Business Goal)
+   ↓
+BR (Business Requirement)
+   ↓
+FR (Functional Requirement)
+   ↓
+UC (Use Case)
+   ↓
+AC (Acceptance Criteria)
+```
+
+### Bảng RTM
+
+| BG | BR | FR | UC | AC |
+|---|---|---|---|---|
+| BG01 – Tự động hóa quy trình đặt xe | BR07 – Tạo yêu cầu đặt xe | FR02 | UC04 | AC07 |
+| BG01 – Tự động hóa quy trình đặt xe | BR08 – Tiếp nhận yêu cầu đặt xe | FR02 | UC04 | AC08 |
+| BG02 – Tự động tìm và phân công tài xế | BR09 – Tự động tìm tài xế | FR03 | UC05 | AC09 |
+| BG02 – Tự động tìm và phân công tài xế | BR10 – Ưu tiên tài xế phù hợp | FR03 | UC05 | AC10 |
+| BG02 – Tự động tìm và phân công tài xế | BR11 – Xử lý tài xế từ chối/không phản hồi | FR04 | UC05, UC06 | AC11 |
+| BG02 – Tự động tìm và phân công tài xế | BR12 – Thông báo không tìm được tài xế | FR09 | UC05 | AC12 |
+| BG02 – Tự động tìm và phân công tài xế | BR13 – Phân công tài xế | FR04 | UC05, UC06 | AC13 |
+| BG02 – Tự động tìm và phân công tài xế | BR05 – Quản lý trạng thái tài xế | FR11 | UC06, UC07 | AC05 |
+| BG02 – Tự động tìm và phân công tài xế | BR06 – Theo dõi vị trí tài xế | FR06 | UC14 | AC06 |
+| BG03 – Nâng cao trải nghiệm khách hàng | BR01 – Quản lý tài khoản khách hàng | FR01 | UC01, UC02, UC03 | AC01 |
+| BG03 – Nâng cao trải nghiệm khách hàng | BR14 – Quản lý trạng thái chuyến đi | FR05 | UC07 | AC14 |
+| BG03 – Nâng cao trải nghiệm khách hàng | BR15 – Theo dõi chuyến đi | FR05 | UC08 | AC15 |
+| BG03 – Nâng cao trải nghiệm khách hàng | BR16 – Theo dõi thời gian dự kiến | FR06 | UC08 | AC16 |
+| BG03 – Nâng cao trải nghiệm khách hàng | BR18 – Lưu lịch sử chuyến đi | FR14 | UC11 | AC18 |
+| BG03 – Nâng cao trải nghiệm khách hàng | BR29 – Đánh giá tài xế | FR10 | UC12 | AC29 |
+| BG03 – Nâng cao trải nghiệm khách hàng | BR30 – Quản lý phản hồi | FR10 | UC12 | AC30 |
+| BG04 – Nâng cao hiệu quả vận hành | BR02 – Quản lý tài khoản tài xế | FR01 | UC02, UC13 | AC02 |
+| BG04 – Nâng cao hiệu quả vận hành | BR03 – Quản lý phương tiện | FR11 | UC13 | AC03 |
+| BG04 – Nâng cao hiệu quả vận hành | BR17 – Xử lý chuyến bị hủy hoặc lỗi | FR05 | UC17, UC18 | AC17 |
+| BG04 – Nâng cao hiệu quả vận hành | BR31 – Quản lý khách hàng | FR11 | UC15 | AC31 |
+| BG04 – Nâng cao hiệu quả vận hành | BR32 – Quản lý tài xế và phương tiện | FR11 | UC16 | AC32 |
+| BG04 – Nâng cao hiệu quả vận hành | BR33 – Theo dõi chuyến đang diễn ra | FR11 | UC17 | AC33 |
+| BG04 – Nâng cao hiệu quả vận hành | BR34 – Hỗ trợ xử lý sự cố | FR11 | UC18 | AC34 |
+| BG05 – Quản lý tính cước và thanh toán | BR19 – Tính cước chuyến đi | FR07 | UC09 | AC19 |
+| BG05 – Quản lý tính cước và thanh toán | BR20 – Thanh toán tiền mặt | FR08 | UC10 | AC20 |
+| BG05 – Quản lý tính cước và thanh toán | BR21 – Thanh toán điện tử | FR08 | UC10 | AC21 |
+| BG05 – Quản lý tính cước và thanh toán | BR22 – Quản lý kết quả thanh toán | FR08 | UC10 | AC22 |
+| BG05 – Quản lý tính cước và thanh toán | BR23 – Xử lý thanh toán thất bại | FR08 | UC10 | AC23 |
+| BG05 – Quản lý tính cước và thanh toán | BR24 – Bảo vệ thông tin thanh toán | FR08 | UC10 | AC24 |
+| BG06 – Xây dựng hệ thống thông báo | BR26 – Thông báo trạng thái đặt xe | FR09 | UC04, UC08 | AC26 |
+| BG06 – Xây dựng hệ thống thông báo | BR27 – Thông báo cho tài xế | FR09 | UC06, UC07 | AC27 |
+| BG06 – Xây dựng hệ thống thông báo | BR28 – Mở rộng kênh thông báo | FR09 | – (kiến trúc, không có UC trực tiếp) | AC28 |
+| BG07 – Quản lý và khai thác dữ liệu | BR18 – Lưu lịch sử chuyến đi | FR14 | UC11 | AC18 |
+| BG07 – Quản lý và khai thác dữ liệu | BR25 – Quản lý lịch sử giao dịch | FR14 | UC17 | AC25 |
+| BG07 – Quản lý và khai thác dữ liệu | BR40 – Lưu vết thao tác | FR13 | UC19 | AC40 |
+| BG08 – Hỗ trợ báo cáo và quản lý hiệu quả | BR35 – Báo cáo hoạt động | FR12 | UC20 | AC35 |
+| BG08 – Hỗ trợ báo cáo và quản lý hiệu quả | BR36 – Báo cáo hiệu quả tài xế | FR12 | UC20 | AC36 |
+| BG09 – Đảm bảo bảo mật và phân quyền | BR04 – Quản lý quyền truy cập | FR13 | UC19 | AC04 |
+| BG09 – Đảm bảo bảo mật và phân quyền | BR37 – Xác thực người dùng | FR01 | UC02 | AC37 |
+| BG09 – Đảm bảo bảo mật và phân quyền | BR38 – Kiểm soát quyền truy cập | FR13 | UC19 | AC38 |
+| BG09 – Đảm bảo bảo mật và phân quyền | BR39 – Bảo vệ dữ liệu | FR13 | UC19 | AC39 |
+| BG09 – Đảm bảo bảo mật và phân quyền | BR40 – Lưu vết thao tác | FR13 | UC19 | AC40 |
+| BG10 – Đảm bảo tính ổn định và khả năng mở rộng | BR41 – Đảm bảo khả năng mở rộng | FR11 | – (kiến trúc, không có UC trực tiếp) | AC41 |
+| BG10 – Đảm bảo tính ổn định và khả năng mở rộng | BR42 – Đảm bảo tính độc lập của các thành phần | FR09 | – (kiến trúc, không có UC trực tiếp) | AC42 |
+| BG10 – Đảm bảo tính ổn định và khả năng mở rộng | BR43 – Hỗ trợ triển khai từng phần | FR11 | – (kiến trúc, không có UC trực tiếp) | AC43 |
+| BG11 – Hỗ trợ phát triển hệ thống trong tương lai | BR44 – Hỗ trợ mở rộng dịch vụ | FR02 | UC04 | AC44 |
+| BG11 – Hỗ trợ phát triển hệ thống trong tương lai | BR45 – Hỗ trợ mở rộng phương thức thanh toán | FR08 | UC10 | AC45 |
+| BG11 – Hỗ trợ phát triển hệ thống trong tương lai | BR46 – Hỗ trợ mở rộng nhà cung cấp thông báo | FR09 | – (kiến trúc, không có UC trực tiếp) | AC46 |
+| BG12 – Hoàn thành MVP trong 7 tuần | (Xuyên suốt toàn bộ BR01–BR46 thuộc phạm vi MVP) | Tất cả FR01–FR14 | Tất cả UC01–UC20 | Tất cả AC01–AC46 |
+
+### Ghi chú về ma trận RTM
+
+- **Các dòng có UC = "– (kiến trúc, không có UC trực tiếp)"**: đây là các Business Requirement thuộc nhóm **phi chức năng / kiến trúc hệ thống** (khả năng mở rộng, tính độc lập thành phần, mở rộng kênh thông báo...), không gắn với một thao tác cụ thể của người dùng nên không có Use Case tương ứng. Các yêu cầu này được kiểm chứng thông qua thiết kế kiến trúc và NFR (B10), không qua kịch bản Use Case.
+- **BR18, BR40** xuất hiện ở hai BG khác nhau (BG03/BG07 và BG07/BG09) vì các yêu cầu này phục vụ đồng thời nhiều mục tiêu kinh doanh (trải nghiệm khách hàng, khai thác dữ liệu, bảo mật).
+- **BG12 (Hoàn thành MVP trong 7 tuần)** là mục tiêu bao trùm toàn bộ dự án, không gắn riêng với một BR cụ thể mà là điều kiện ràng buộc về phạm vi và thời gian cho toàn bộ các BR còn lại.
+- Ma trận này cần được **cập nhật liên tục** trong suốt vòng đời dự án khi có thay đổi yêu cầu, bổ sung Use Case mới, hoặc điều chỉnh Acceptance Criteria sau khi làm rõ với khách hàng (xem mục "Các vấn đề chưa đủ thông tin" ở B4.12).
