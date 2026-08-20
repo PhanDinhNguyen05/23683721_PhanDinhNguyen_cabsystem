@@ -1182,4 +1182,28 @@ erDiagram
         datetime CreatedAt
         string IPAddress
     }
+```
+## B10. Xác định Non-Functional Requirements
 
+| Mã NFR | Nhóm yêu cầu | Non-Functional Requirement |
+|---|---|---|
+| **NFR01** | Hiệu năng | Hệ thống phải phản hồi các thao tác thông thường của người dùng trong thời gian phù hợp, đặc biệt đối với chức năng đặt xe và theo dõi chuyến. |
+| **NFR02** | Hiệu năng | Hệ thống phải có khả năng xử lý đồng thời nhiều yêu cầu đặt xe và tìm tài xế trong thời gian cao điểm. |
+| **NFR03** | Khả năng mở rộng | Hệ thống phải có khả năng mở rộng độc lập các thành phần khi số lượng khách hàng, tài xế và chuyến đi tăng. |
+| **NFR04** | Tính sẵn sàng | Hệ thống phải duy trì hoạt động ổn định trong thời gian cao điểm và hạn chế tối đa thời gian ngừng hoạt động. |
+| **NFR05** | Khả năng chịu lỗi | Lỗi tại chức năng thanh toán, thông báo hoặc một thành phần riêng lẻ không được làm dừng toàn bộ hệ thống đặt xe. |
+| **NFR06** | Khả năng phục hồi | Hệ thống phải có khả năng phục hồi và tiếp tục xử lý khi xảy ra lỗi hoặc mất kết nối tạm thời. |
+| **NFR07** | Bảo mật | Người dùng phải được xác thực trước khi sử dụng các chức năng yêu cầu tài khoản. |
+| **NFR08** | Phân quyền | Hệ thống phải kiểm soát quyền truy cập dựa trên vai trò của khách hàng, tài xế, nhân viên vận hành và quản trị viên. |
+| **NFR09** | Bảo mật dữ liệu | Thông tin cá nhân, thông tin phương tiện, dữ liệu vị trí và dữ liệu giao dịch phải được bảo vệ khỏi truy cập trái phép. |
+| **NFR10** | Bảo mật thanh toán | Hệ thống không được lưu trực tiếp thông tin nhạy cảm của thẻ hoặc tài khoản thanh toán. |
+| **NFR11** | Audit | Các thao tác quản trị và thao tác quan trọng phải được ghi nhận log để phục vụ kiểm tra và xử lý sự cố. |
+| **NFR12** | Tin cậy dữ liệu | Dữ liệu chuyến đi, thanh toán và giao dịch phải được lưu trữ chính xác và nhất quán. |
+| **NFR13** | Tính mở rộng | Kiến trúc phải cho phép bổ sung loại dịch vụ, phương thức thanh toán và nhà cung cấp thông báo mới mà không phải xây dựng lại toàn bộ hệ thống. |
+| **NFR14** | Khả năng bảo trì | Các thành phần hệ thống phải được thiết kế độc lập để có thể bảo trì hoặc nâng cấp mà hạn chế ảnh hưởng đến các chức năng khác. |
+| **NFR15** | Khả năng triển khai | Hệ thống phải hỗ trợ triển khai từng phần để giảm ảnh hưởng đến các chức năng đang hoạt động. |
+| **NFR16** | Khả năng tương thích | Hệ thống phải có khả năng tích hợp với các nhà cung cấp bên ngoài như thanh toán và thông báo. |
+| **NFR17** | Khả năng mở rộng thông báo | Kiến trúc thông báo phải cho phép bổ sung các kênh như Push Notification, SMS, Email hoặc các nhà cung cấp khác trong tương lai. |
+| **NFR18** | Giám sát | Hệ thống cần có khả năng theo dõi trạng thái hoạt động, lỗi và các chỉ số quan trọng của các thành phần. |
+| **NFR19** | Sao lưu | Dữ liệu quan trọng phải được sao lưu và có phương án khôi phục khi xảy ra sự cố. |
+| **NFR20** | Khả năng sử dụng | Giao diện dành cho khách hàng, tài xế và nhân viên vận hành phải dễ sử dụng và phù hợp với từng nhóm người dùng. |
