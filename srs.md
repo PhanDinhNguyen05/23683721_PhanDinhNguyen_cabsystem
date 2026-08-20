@@ -1207,3 +1207,339 @@ erDiagram
 | **NFR18** | Giám sát | Hệ thống cần có khả năng theo dõi trạng thái hoạt động, lỗi và các chỉ số quan trọng của các thành phần. |
 | **NFR19** | Sao lưu | Dữ liệu quan trọng phải được sao lưu và có phương án khôi phục khi xảy ra sự cố. |
 | **NFR20** | Khả năng sử dụng | Giao diện dành cho khách hàng, tài xế và nhân viên vận hành phải dễ sử dụng và phù hợp với từng nhóm người dùng. |
+
+## B11. Xác định và vẽ Use Case
+```mermaid
+flowchart LR
+    Customer((Customer))
+    Driver((Driver))
+    Staff((Operation Staff))
+    Admin((Administrator))
+
+    subgraph CAB["CAB SYSTEM"]
+        UC01([UC01 - Đăng ký tài khoản])
+        UC02([UC02 - Đăng nhập])
+        UC03([UC03 - Quản lý thông tin cá nhân])
+        UC04([UC04 - Đặt chuyến xe])
+        UC05([UC05 - Tìm và phân công tài xế])
+        UC06([UC06 - Chấp nhận/Từ chối chuyến])
+        UC07([UC07 - Cập nhật trạng thái chuyến])
+        UC08([UC08 - Theo dõi chuyến đi])
+        UC09([UC09 - Tính cước])
+        UC10([UC10 - Thanh toán])
+    end
+
+    Customer --- UC01
+    Customer --- UC02
+    Customer --- UC03
+    Customer --- UC04
+    Customer --- UC08
+    Customer --- UC10
+
+    Driver --- UC02
+    Driver --- UC03
+    Driver --- UC06
+    Driver --- UC07
+
+    Staff --- UC02
+    Admin --- UC02
+```
+# Đặc tả User Case
+
+## UC01 – Đăng ký tài khoản
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC01 |
+| **Tên** | Đăng ký tài khoản |
+| **Actor** | Khách hàng |
+| **Mục tiêu** | Tạo tài khoản để sử dụng dịch vụ CAB |
+| **Tiền điều kiện** | Khách hàng chưa có tài khoản |
+| **Luồng chính** | 1. Khách hàng chọn chức năng đăng ký.<br>2. Nhập họ tên, email, số điện thoại và mật khẩu.<br>3. Hệ thống kiểm tra thông tin.<br>4. Hệ thống tạo tài khoản.<br>5. Hệ thống thông báo đăng ký thành công. |
+| **Ngoại lệ** | Email hoặc số điện thoại đã tồn tại → hệ thống thông báo lỗi và yêu cầu nhập lại. |
+| **Hậu điều kiện** | Tài khoản khách hàng được tạo thành công. |
+
+---
+
+## UC02 – Đăng nhập
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC02 |
+| **Tên** | Đăng nhập |
+| **Actor** | Khách hàng, Tài xế, Nhân viên vận hành, Quản trị viên |
+| **Mục tiêu** | Xác thực người dùng để sử dụng các chức năng của hệ thống |
+| **Tiền điều kiện** | Người dùng đã có tài khoản |
+| **Luồng chính** | 1. Người dùng mở chức năng đăng nhập.<br>2. Nhập email/số điện thoại và mật khẩu.<br>3. Hệ thống kiểm tra thông tin đăng nhập.<br>4. Hệ thống xác định vai trò của người dùng.<br>5. Hệ thống cho phép truy cập các chức năng tương ứng với vai trò. |
+| **Ngoại lệ** | Thông tin đăng nhập không chính xác → hệ thống thông báo lỗi và yêu cầu nhập lại. |
+| **Hậu điều kiện** | Người dùng đăng nhập thành công và được cấp quyền truy cập phù hợp. |
+
+---
+
+## UC03 – Quản lý thông tin cá nhân
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC03 |
+| **Tên** | Quản lý thông tin cá nhân |
+| **Actor** | Khách hàng, Tài xế |
+| **Mục tiêu** | Cho phép người dùng xem và cập nhật thông tin cá nhân |
+| **Tiền điều kiện** | Người dùng đã đăng nhập |
+| **Luồng chính** | 1. Người dùng mở chức năng thông tin cá nhân.<br>2. Hệ thống hiển thị thông tin hiện tại.<br>3. Người dùng chỉnh sửa thông tin cần thay đổi.<br>4. Người dùng chọn lưu.<br>5. Hệ thống kiểm tra dữ liệu.<br>6. Hệ thống cập nhật thông tin. |
+| **Ngoại lệ** | Thông tin không hợp lệ → hệ thống thông báo lỗi và yêu cầu người dùng nhập lại. |
+| **Hậu điều kiện** | Thông tin cá nhân được cập nhật thành công. |
+
+---
+
+## UC04 – Đặt chuyến xe
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC04 |
+| **Tên** | Đặt chuyến xe |
+| **Actor** | Khách hàng |
+| **Mục tiêu** | Cho phép khách hàng tạo yêu cầu đặt chuyến xe |
+| **Tiền điều kiện** | Khách hàng đã đăng nhập |
+| **Luồng chính** | 1. Khách hàng chọn chức năng đặt xe.<br>2. Nhập điểm đón.<br>3. Nhập điểm đến.<br>4. Chọn loại xe/dịch vụ.<br>5. Hệ thống hiển thị thông tin chuyến và cước dự kiến.<br>6. Khách hàng xác nhận đặt xe.<br>7. Hệ thống tạo yêu cầu đặt chuyến.<br>8. Hệ thống bắt đầu tìm tài xế phù hợp. |
+| **Ngoại lệ** | Điểm đón, điểm đến hoặc thông tin chuyến không hợp lệ → hệ thống yêu cầu nhập lại.<br><br>Không có tài xế phù hợp → hệ thống thông báo cho khách hàng. |
+| **Hậu điều kiện** | Yêu cầu đặt chuyến được tạo và chuyển sang quá trình tìm tài xế. |
+
+---
+
+## UC05 – Tìm và phân công tài xế
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC05 |
+| **Tên** | Tìm và phân công tài xế |
+| **Actor** | Hệ thống |
+| **Mục tiêu** | Tìm tài xế phù hợp và phân công tài xế cho chuyến xe |
+| **Tiền điều kiện** | Có yêu cầu đặt chuyến đang chờ tài xế |
+| **Luồng chính** | 1. Hệ thống nhận yêu cầu đặt chuyến.<br>2. Hệ thống lấy thông tin vị trí điểm đón.<br>3. Tìm các tài xế đang ở trạng thái sẵn sàng.<br>4. Hệ thống lựa chọn tài xế phù hợp, ưu tiên tài xế ở gần điểm đón.<br>5. Hệ thống gửi yêu cầu nhận chuyến cho tài xế.<br>6. Tài xế chấp nhận chuyến.<br>7. Hệ thống phân công tài xế cho chuyến.<br>8. Hệ thống thông báo thông tin tài xế cho khách hàng. |
+| **Ngoại lệ** | Tài xế từ chối hoặc không phản hồi → hệ thống tiếp tục tìm tài xế khác.<br><br>Không tìm được tài xế → hệ thống thông báo cho khách hàng. |
+| **Hậu điều kiện** | Chuyến xe được phân công tài xế hoặc yêu cầu đặt chuyến được thông báo không thành công. |
+
+---
+
+## UC06 – Chấp nhận/Từ chối chuyến
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC06 |
+| **Tên** | Chấp nhận/Từ chối chuyến |
+| **Actor** | Tài xế |
+| **Mục tiêu** | Cho phép tài xế phản hồi yêu cầu chuyến xe |
+| **Tiền điều kiện** | Tài xế đã đăng nhập, đang ở trạng thái sẵn sàng và nhận được yêu cầu chuyến |
+| **Luồng chính** | 1. Tài xế nhận thông báo có chuyến mới.<br>2. Tài xế xem thông tin chuyến.<br>3. Tài xế chọn chấp nhận hoặc từ chối chuyến.<br>4. Hệ thống ghi nhận lựa chọn của tài xế.<br>5. Nếu chấp nhận, hệ thống phân công chuyến cho tài xế.<br>6. Nếu từ chối, hệ thống chuyển yêu cầu sang quá trình tìm tài xế khác. |
+| **Ngoại lệ** | Tài xế không phản hồi trong thời gian quy định → hệ thống tự động chuyển sang tìm tài xế khác. |
+| **Hậu điều kiện** | Chuyến được tài xế chấp nhận hoặc được chuyển sang tài xế khác. |
+
+---
+
+## UC07 – Cập nhật trạng thái chuyến
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC07 |
+| **Tên** | Cập nhật trạng thái chuyến |
+| **Actor** | Tài xế |
+| **Mục tiêu** | Cập nhật trạng thái và tiến trình thực hiện chuyến xe |
+| **Tiền điều kiện** | Tài xế đã được phân công chuyến |
+| **Luồng chính** | 1. Tài xế xác nhận đã nhận chuyến.<br>2. Tài xế di chuyển đến điểm đón.<br>3. Tài xế cập nhật trạng thái đã đến điểm đón.<br>4. Tài xế đón khách và cập nhật trạng thái đã đón khách.<br>5. Tài xế bắt đầu di chuyển đến điểm đến.<br>6. Tài xế cập nhật trạng thái đang di chuyển.<br>7. Khi đến điểm đến, tài xế cập nhật trạng thái hoàn thành chuyến. |
+| **Ngoại lệ** | Mất kết nối mạng → hệ thống lưu trạng thái tạm thời và đồng bộ lại khi kết nối được khôi phục. |
+| **Hậu điều kiện** | Trạng thái chuyến được cập nhật chính xác trên hệ thống. |
+
+---
+
+## UC08 – Theo dõi chuyến đi
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC08 |
+| **Tên** | Theo dõi chuyến đi |
+| **Actor** | Khách hàng |
+| **Mục tiêu** | Cho phép khách hàng theo dõi vị trí và trạng thái chuyến xe |
+| **Tiền điều kiện** | Chuyến xe đã được phân công tài xế |
+| **Luồng chính** | 1. Khách hàng mở thông tin chuyến đang thực hiện.<br>2. Hệ thống hiển thị thông tin tài xế và phương tiện.<br>3. Hệ thống hiển thị vị trí hiện tại của tài xế trên bản đồ.<br>4. Hệ thống hiển thị trạng thái chuyến.<br>5. Hệ thống liên tục cập nhật vị trí và trạng thái trong quá trình di chuyển. |
+| **Ngoại lệ** | Không nhận được dữ liệu vị trí → hệ thống thông báo vị trí hiện tại không khả dụng và tiếp tục thử cập nhật. |
+| **Hậu điều kiện** | Khách hàng nắm được vị trí và trạng thái hiện tại của chuyến xe. |
+
+---
+
+## UC09 – Tính cước
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC09 |
+| **Tên** | Tính cước |
+| **Actor** | Hệ thống |
+| **Mục tiêu** | Xác định số tiền khách hàng phải thanh toán cho chuyến xe |
+| **Tiền điều kiện** | Chuyến xe đã hoàn thành |
+| **Luồng chính** | 1. Hệ thống lấy thông tin chuyến xe.<br>2. Xác định loại dịch vụ và phương tiện.<br>3. Lấy thông tin quãng đường, thời gian và các phụ phí nếu có.<br>4. Hệ thống áp dụng quy tắc tính cước.<br>5. Tính tổng số tiền phải thanh toán.<br>6. Lưu thông tin cước.<br>7. Thông báo số tiền cho khách hàng. |
+| **Ngoại lệ** | Thiếu dữ liệu chuyến hoặc dữ liệu không hợp lệ → hệ thống chuyển yêu cầu sang nhân viên vận hành xử lý. |
+| **Hậu điều kiện** | Số tiền phải thanh toán được xác định và lưu vào hệ thống. |
+
+---
+
+## UC10 – Thanh toán
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC10 |
+| **Tên** | Thanh toán |
+| **Actor** | Khách hàng, Nhà cung cấp thanh toán |
+| **Mục tiêu** | Cho phép khách hàng thanh toán chi phí chuyến xe |
+| **Tiền điều kiện** | Chuyến xe đã hoàn thành và hệ thống đã xác định số tiền phải trả |
+| **Luồng chính** | 1. Khách hàng xem số tiền cần thanh toán.<br>2. Khách hàng lựa chọn phương thức thanh toán.<br>3. Nếu thanh toán tiền mặt, hệ thống ghi nhận trạng thái thanh toán.<br>4. Nếu thanh toán điện tử, hệ thống gửi yêu cầu đến nhà cung cấp thanh toán.<br>5. Nhà cung cấp thanh toán xử lý giao dịch.<br>6. Hệ thống nhận kết quả giao dịch.<br>7. Hệ thống lưu thông tin thanh toán.<br>8. Hệ thống thông báo kết quả cho khách hàng. |
+| **Ngoại lệ** | Thanh toán điện tử thất bại → hệ thống thông báo lỗi và cho phép khách hàng thực hiện thanh toán lại theo chính sách. |
+| **Hậu điều kiện** | Giao dịch được ghi nhận với trạng thái thành công hoặc thất bại. |
+
+---
+
+## UC11 – Xem lịch sử chuyến
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC11 |
+| **Tên** | Xem lịch sử chuyến |
+| **Actor** | Khách hàng |
+| **Mục tiêu** | Cho phép khách hàng xem lại các chuyến xe đã thực hiện |
+| **Tiền điều kiện** | Khách hàng đã đăng nhập |
+| **Luồng chính** | 1. Khách hàng chọn chức năng lịch sử chuyến.<br>2. Hệ thống lấy danh sách các chuyến đã thực hiện.<br>3. Hệ thống hiển thị thông tin chuyến gồm thời gian, điểm đón, điểm đến, tài xế, cước phí và trạng thái.<br>4. Khách hàng chọn một chuyến để xem chi tiết. |
+| **Ngoại lệ** | Không có chuyến trong lịch sử → hệ thống thông báo chưa có dữ liệu lịch sử. |
+| **Hậu điều kiện** | Khách hàng xem được lịch sử và chi tiết các chuyến đã thực hiện. |
+
+---
+
+## UC12 – Đánh giá tài xế
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC12 |
+| **Tên** | Đánh giá tài xế |
+| **Actor** | Khách hàng |
+| **Mục tiêu** | Cho phép khách hàng đánh giá chất lượng chuyến đi và tài xế |
+| **Tiền điều kiện** | Chuyến xe đã hoàn thành và khách hàng đã đăng nhập |
+| **Luồng chính** | 1. Khách hàng mở thông tin chuyến đã hoàn thành.<br>2. Chọn chức năng đánh giá tài xế.<br>3. Chọn số sao đánh giá.<br>4. Nhập nhận xét nếu muốn.<br>5. Khách hàng gửi đánh giá.<br>6. Hệ thống kiểm tra và lưu đánh giá.<br>7. Hệ thống thông báo đánh giá thành công. |
+| **Ngoại lệ** | Số sao không hợp lệ hoặc đánh giá không đúng định dạng → hệ thống yêu cầu nhập lại. |
+| **Hậu điều kiện** | Đánh giá của khách hàng được lưu vào hệ thống. |
+
+---
+
+## UC13 – Quản lý hồ sơ và phương tiện
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC13 |
+| **Tên** | Quản lý hồ sơ và phương tiện |
+| **Actor** | Tài xế |
+| **Mục tiêu** | Cho phép tài xế cập nhật thông tin cá nhân và thông tin phương tiện |
+| **Tiền điều kiện** | Tài xế đã đăng nhập |
+| **Luồng chính** | 1. Tài xế mở chức năng hồ sơ và phương tiện.<br>2. Hệ thống hiển thị thông tin hiện tại.<br>3. Tài xế cập nhật thông tin cá nhân hoặc phương tiện.<br>4. Tài xế gửi thông tin cập nhật.<br>5. Hệ thống kiểm tra dữ liệu.<br>6. Hệ thống lưu thông tin mới. |
+| **Ngoại lệ** | Thông tin hoặc giấy tờ không hợp lệ → hệ thống thông báo lỗi và yêu cầu cập nhật lại. |
+| **Hậu điều kiện** | Hồ sơ hoặc thông tin phương tiện được cập nhật. |
+
+---
+
+## UC14 – Cập nhật vị trí
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC14 |
+| **Tên** | Cập nhật vị trí |
+| **Actor** | Tài xế, Hệ thống định vị |
+| **Mục tiêu** | Cập nhật vị trí hiện tại của tài xế để phục vụ điều phối và theo dõi chuyến |
+| **Tiền điều kiện** | Tài xế đã đăng nhập và cho phép hệ thống sử dụng vị trí |
+| **Luồng chính** | 1. Hệ thống lấy vị trí hiện tại của tài xế.<br>2. Tài xế gửi dữ liệu vị trí lên hệ thống.<br>3. Hệ thống kiểm tra dữ liệu vị trí.<br>4. Hệ thống lưu/cập nhật vị trí.<br>5. Vị trí được sử dụng cho việc tìm tài xế và theo dõi chuyến. |
+| **Ngoại lệ** | Không lấy được vị trí hoặc mất kết nối → hệ thống giữ vị trí gần nhất và thử cập nhật lại. |
+| **Hậu điều kiện** | Vị trí hiện tại hoặc vị trí gần nhất của tài xế được cập nhật trên hệ thống. |
+
+---
+
+## UC15 – Quản lý khách hàng
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC15 |
+| **Tên** | Quản lý khách hàng |
+| **Actor** | Nhân viên vận hành |
+| **Mục tiêu** | Quản lý thông tin và trạng thái hoạt động của khách hàng |
+| **Tiền điều kiện** | Nhân viên vận hành đã đăng nhập và có quyền quản lý khách hàng |
+| **Luồng chính** | 1. Nhân viên mở chức năng quản lý khách hàng.<br>2. Hệ thống hiển thị danh sách khách hàng.<br>3. Nhân viên tìm kiếm hoặc chọn khách hàng.<br>4. Xem thông tin chi tiết.<br>5. Nhân viên cập nhật trạng thái hoặc thông tin theo quyền hạn.<br>6. Hệ thống lưu thay đổi. |
+| **Ngoại lệ** | Không tìm thấy khách hàng → hệ thống thông báo không có dữ liệu phù hợp.<br><br>Thông tin cập nhật không hợp lệ → hệ thống yêu cầu nhập lại. |
+| **Hậu điều kiện** | Thông tin hoặc trạng thái khách hàng được cập nhật. |
+
+---
+
+## UC16 – Quản lý tài xế
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC16 |
+| **Tên** | Quản lý tài xế |
+| **Actor** | Nhân viên vận hành |
+| **Mục tiêu** | Quản lý thông tin, trạng thái và hoạt động của tài xế |
+| **Tiền điều kiện** | Nhân viên vận hành đã đăng nhập và có quyền quản lý tài xế |
+| **Luồng chính** | 1. Nhân viên mở chức năng quản lý tài xế.<br>2. Hệ thống hiển thị danh sách tài xế.<br>3. Nhân viên tìm kiếm và xem thông tin tài xế.<br>4. Nhân viên cập nhật thông tin hoặc trạng thái tài xế.<br>5. Hệ thống kiểm tra dữ liệu.<br>6. Hệ thống lưu thay đổi. |
+| **Ngoại lệ** | Không tìm thấy tài xế → hệ thống thông báo không có dữ liệu.<br><br>Thông tin không hợp lệ → hệ thống yêu cầu nhập lại. |
+| **Hậu điều kiện** | Thông tin và trạng thái tài xế được cập nhật. |
+
+---
+
+## UC17 – Quản lý chuyến đi
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC17 |
+| **Tên** | Quản lý chuyến đi |
+| **Actor** | Nhân viên vận hành |
+| **Mục tiêu** | Theo dõi và xử lý các chuyến xe trong hệ thống |
+| **Tiền điều kiện** | Nhân viên vận hành đã đăng nhập và có quyền quản lý chuyến |
+| **Luồng chính** | 1. Nhân viên mở chức năng quản lý chuyến.<br>2. Hệ thống hiển thị danh sách chuyến.<br>3. Nhân viên tìm kiếm chuyến theo mã, khách hàng, tài xế hoặc trạng thái.<br>4. Nhân viên xem chi tiết chuyến.<br>5. Nhân viên thực hiện các thao tác xử lý khi cần.<br>6. Hệ thống cập nhật kết quả xử lý. |
+| **Ngoại lệ** | Không tìm thấy chuyến → hệ thống thông báo không có dữ liệu phù hợp.<br><br>Không thể cập nhật chuyến → hệ thống thông báo lỗi. |
+| **Hậu điều kiện** | Thông tin hoặc trạng thái chuyến được cập nhật theo thao tác của nhân viên. |
+
+---
+
+## UC18 – Xử lý sự cố
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC18 |
+| **Tên** | Xử lý sự cố |
+| **Actor** | Nhân viên vận hành |
+| **Mục tiêu** | Tiếp nhận và xử lý các sự cố phát sinh trong quá trình sử dụng dịch vụ |
+| **Tiền điều kiện** | Nhân viên vận hành đã đăng nhập và có sự cố cần xử lý |
+| **Luồng chính** | 1. Nhân viên nhận thông báo sự cố.<br>2. Nhân viên xem thông tin sự cố.<br>3. Kiểm tra thông tin khách hàng, tài xế và chuyến liên quan.<br>4. Xác định nguyên nhân và phương án xử lý.<br>5. Thực hiện xử lý sự cố.<br>6. Cập nhật kết quả xử lý.<br>7. Hệ thống lưu lịch sử xử lý. |
+| **Ngoại lệ** | Không đủ thông tin → nhân viên yêu cầu bổ sung thông tin.<br><br>Sự cố vượt quá quyền xử lý → chuyển cho cấp quản lý có thẩm quyền. |
+| **Hậu điều kiện** | Sự cố được xử lý hoặc chuyển sang bộ phận/cấp có thẩm quyền. |
+
+---
+
+## UC19 – Quản lý tài khoản và phân quyền
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC19 |
+| **Tên** | Quản lý tài khoản và phân quyền |
+| **Actor** | Quản trị viên |
+| **Mục tiêu** | Quản lý tài khoản người dùng và quyền truy cập hệ thống |
+| **Tiền điều kiện** | Quản trị viên đã đăng nhập |
+| **Luồng chính** | 1. Quản trị viên mở chức năng quản lý tài khoản và phân quyền.<br>2. Hệ thống hiển thị danh sách tài khoản và vai trò.<br>3. Quản trị viên tìm kiếm hoặc chọn tài khoản.<br>4. Quản trị viên tạo, khóa, mở khóa hoặc cập nhật tài khoản.<br>5. Quản trị viên thiết lập vai trò/quyền truy cập.<br>6. Hệ thống kiểm tra quyền hạn.<br>7. Hệ thống lưu thay đổi. |
+| **Ngoại lệ** | Tài khoản không tồn tại → hệ thống thông báo lỗi.<br><br>Quyền phân công không hợp lệ → hệ thống từ chối thao tác và thông báo lỗi. |
+| **Hậu điều kiện** | Tài khoản và quyền truy cập được cập nhật theo yêu cầu. |
+
+---
+
+## UC20 – Xem báo cáo
+
+| Thành phần | Nội dung |
+|---|---|
+| **Mã UC** | UC20 |
+| **Tên** | Xem báo cáo |
+| **Actor** | Quản trị viên |
+| **Mục tiêu** | Cung cấp các báo cáo về hoạt động của hệ thống CAB |
+| **Tiền điều kiện** | Quản trị viên đã đăng nhập và có quyền xem báo cáo |
+| **Luồng chính** | 1. Quản trị viên mở chức năng báo cáo.<br>2. Chọn loại báo cáo cần xem.<br>3. Chọn khoảng thời gian và các tiêu chí lọc.<br>4. Hệ thống tổng hợp dữ liệu.<br>5. Hệ thống hiển thị báo cáo.<br>6. Quản trị viên xem hoặc xuất báo cáo nếu được hỗ trợ. |
+| **Ngoại lệ** | Không có dữ liệu trong khoảng thời gian đã chọn → hệ thống thông báo không có dữ liệu.<br><br>Lỗi tổng hợp dữ liệu → hệ thống thông báo và yêu cầu thực hiện lại. |
+| **Hậu điều kiện** | Báo cáo được hiển thị hoặc xuất thành công. |
