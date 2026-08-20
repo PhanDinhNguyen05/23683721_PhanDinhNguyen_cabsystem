@@ -713,3 +713,218 @@ flowchart TD
     N --> O[Bảo vệ dữ liệu]
     O --> P([Kết thúc])
      ````
+# B7. Xây dựng Business Requirement và phân rã thành Functional Requirement
+
+## 1. Nguyên tắc phân rã
+
+Business Requirement (BR) mô tả **doanh nghiệp cần hệ thống đạt được điều gì**.
+
+Functional Requirement (FR) mô tả **hệ thống phải làm gì để đáp ứng Business Requirement**.
+
+```text
+Business Requirement (BR)
+        ↓
+Functional Requirement (FR)
+        ↓
+Function / Module của hệ thống
+```
+## 2. Bảng phân rã Business Requirement → Functional Requirement
+
+| Mã BR | Business Requirement | Mã FR | Functional Requirement |
+|---|---|---|---|
+| **BR01** | Quản lý tài khoản người dùng | **FR01** | Đăng ký, đăng nhập, đăng xuất và cập nhật thông tin người dùng. |
+| **BR02** | Quản lý tài khoản tài xế | **FR01** | Tạo tài khoản, đăng nhập và cập nhật thông tin hồ sơ tài xế. |
+| **BR03** | Quản lý phương tiện | **FR11** | Thêm, sửa, xem và quản lý thông tin phương tiện. |
+| **BR04** | Quản lý quyền truy cập | **FR13** | Phân quyền và kiểm soát quyền truy cập các chức năng quản trị. |
+| **BR05** | Quản lý trạng thái tài xế | **FR11** | Cập nhật và theo dõi trạng thái hoạt động, trạng thái sẵn sàng nhận chuyến của tài xế. |
+| **BR06** | Theo dõi vị trí tài xế | **FR06** | Cập nhật, lưu và theo dõi vị trí tài xế để hỗ trợ tìm xe và xác định ETA. |
+| **BR07** | Tạo yêu cầu đặt xe | **FR02** | Nhập điểm đón, điểm đến, chọn loại xe và gửi yêu cầu đặt xe. |
+| **BR08** | Tiếp nhận yêu cầu đặt xe | **FR02** | Kiểm tra, tạo và lưu yêu cầu đặt xe, đồng thời cập nhật trạng thái chuyến. |
+| **BR09** | Tự động tìm tài xế | **FR03** | Xác định và tìm tài xế phù hợp dựa trên vị trí, trạng thái và loại xe. |
+| **BR10** | Ưu tiên tài xế phù hợp | **FR03** | Ưu tiên tài xế phù hợp và gần khách hàng theo tiêu chí vận hành. |
+| **BR11** | Xử lý tài xế từ chối hoặc không phản hồi | **FR04** | Ghi nhận từ chối/không phản hồi và tiếp tục tìm tài xế khác. |
+| **BR12** | Thông báo không tìm được tài xế | **FR09** | Thông báo cho khách hàng khi hệ thống không tìm được tài xế phù hợp. |
+| **BR13** | Phân công tài xế | **FR04** | Gửi yêu cầu đến tài xế, ghi nhận tài xế chấp nhận và phân công tài xế cho chuyến. |
+| **BR14** | Quản lý trạng thái chuyến đi | **FR05** | Tạo, cập nhật và quản lý trạng thái chuyến từ lúc đặt xe đến khi hoàn thành hoặc hủy. |
+| **BR15** | Theo dõi chuyến đi | **FR05** | Cho phép khách hàng theo dõi trạng thái và thông tin chuyến đi. |
+| **BR16** | Theo dõi thời gian dự kiến | **FR06** | Xác định và hiển thị thời gian dự kiến tài xế đến điểm đón. |
+| **BR17** | Xử lý chuyến bị hủy hoặc lỗi | **FR05** | Xử lý hủy chuyến, ghi nhận lý do và hỗ trợ xử lý các chuyến bị lỗi. |
+| **BR18** | Lưu lịch sử chuyến đi | **FR14** | Lưu và cho phép tra cứu lịch sử các chuyến đi. |
+| **BR19** | Tính cước chuyến đi | **FR07** | Tính số tiền khách hàng phải trả dựa trên loại dịch vụ và thông tin chuyến. |
+| **BR20** | Thanh toán tiền mặt | **FR08** | Hỗ trợ lựa chọn và ghi nhận thanh toán bằng tiền mặt. |
+| **BR21** | Thanh toán điện tử | **FR08** | Tích hợp với nhà cung cấp thanh toán bên ngoài để xử lý thanh toán điện tử. |
+| **BR22** | Quản lý kết quả thanh toán | **FR08** | Ghi nhận và cập nhật trạng thái giao dịch thanh toán thành công hoặc thất bại. |
+| **BR23** | Xử lý thanh toán thất bại | **FR08** | Thông báo thanh toán thất bại và cho phép thanh toán lại theo chính sách. |
+| **BR24** | Bảo vệ thông tin thanh toán | **FR08** | Không lưu trực tiếp thông tin nhạy cảm của thẻ hoặc tài khoản thanh toán. |
+| **BR25** | Quản lý lịch sử giao dịch | **FR14** | Lưu và cho phép nhân viên vận hành tra cứu lịch sử giao dịch. |
+| **BR26** | Thông báo trạng thái đặt xe | **FR09** | Gửi thông báo khi yêu cầu được tiếp nhận, tài xế nhận chuyến, tài xế đến, chuyến hoàn thành và thanh toán có kết quả. |
+| **BR27** | Thông báo cho tài xế | **FR09** | Gửi thông báo cho tài xế về chuyến mới và các thay đổi liên quan đến chuyến. |
+| **BR28** | Mở rộng kênh thông báo | **FR09** | Hỗ trợ tích hợp thêm các kênh hoặc nhà cung cấp thông báo trong tương lai. |
+| **BR29** | Đánh giá tài xế | **FR10** | Cho phép khách hàng đánh giá và nhận xét tài xế sau khi hoàn thành chuyến. |
+| **BR30** | Quản lý phản hồi | **FR10** | Lưu và quản lý dữ liệu đánh giá, phản hồi của khách hàng về tài xế. |
+| **BR31** | Quản lý khách hàng | **FR11** | Nhân viên vận hành có thể xem và quản lý thông tin khách hàng. |
+| **BR32** | Quản lý tài xế và phương tiện | **FR11** | Nhân viên vận hành có thể quản lý thông tin tài xế và phương tiện. |
+| **BR33** | Theo dõi chuyến đang diễn ra | **FR11** | Nhân viên vận hành có thể xem và theo dõi các chuyến đang diễn ra. |
+| **BR34** | Hỗ trợ xử lý sự cố | **FR11** | Nhân viên vận hành có thể xem và hỗ trợ xử lý các chuyến bị lỗi. |
+| **BR35** | Báo cáo hoạt động | **FR12** | Cung cấp báo cáo về số lượng chuyến, doanh thu, tỷ lệ hoàn thành và tỷ lệ hủy. |
+| **BR36** | Báo cáo hiệu quả tài xế | **FR12** | Cung cấp báo cáo về hiệu quả hoạt động và đánh giá tài xế. |
+| **BR37** | Xác thực người dùng | **FR01** | Xác thực người dùng trước khi sử dụng các chức năng yêu cầu tài khoản. |
+| **BR38** | Kiểm soát quyền truy cập | **FR13** | Kiểm tra quyền của người dùng trước khi thực hiện các thao tác quản trị. |
+| **BR39** | Bảo vệ dữ liệu | **FR13** | Kiểm soát quyền truy cập đối với dữ liệu cá nhân, phương tiện, vị trí và giao dịch. |
+| **BR40** | Lưu vết thao tác | **FR13** | Ghi nhận các thao tác quan trọng của người dùng để phục vụ kiểm tra và xử lý sự cố. |
+| **BR41** | Đảm bảo khả năng mở rộng | **FR11** | Hỗ trợ mở rộng hệ thống và các thành phần khi số lượng người dùng, tài xế và chuyến tăng. |
+| **BR42** | Đảm bảo tính độc lập của các thành phần | **FR09** | Đảm bảo lỗi ở thông báo hoặc thanh toán không làm dừng toàn bộ quy trình đặt xe. |
+| **BR43** | Hỗ trợ triển khai từng phần | **FR11** | Cho phép các chức năng hoặc thành phần được triển khai và nâng cấp từng phần. |
+| **BR44** | Hỗ trợ mở rộng dịch vụ | **FR02** | Cho phép bổ sung loại xe hoặc loại dịch vụ mới trong tương lai. |
+| **BR45** | Hỗ trợ mở rộng phương thức thanh toán | **FR08** | Cho phép tích hợp thêm phương thức hoặc nhà cung cấp thanh toán. |
+| **BR46** | Hỗ trợ mở rộng nhà cung cấp thông báo | **FR09** | Cho phép tích hợp thêm kênh hoặc nhà cung cấp thông báo mới. |
+
+## 3. Phân rã theo Business Process
+
+### BP01 – Quy trình đặt chuyến xe
+
+```text
+BP01
+├── BR07 – Tạo yêu cầu đặt xe
+│   └── FR02 – Đặt xe
+├── BR08 – Tiếp nhận yêu cầu đặt xe
+│   └── FR02 – Đặt xe
+└── BR26 – Thông báo yêu cầu đặt xe
+    └── FR09 – Thông báo
+BP02 – Quy trình tìm và phân công tài xế
+BP02
+├── BR09 – Tự động tìm tài xế
+│   └── FR03 – Tìm tài xế
+├── BR10 – Ưu tiên tài xế phù hợp
+│   └── FR03 – Tìm tài xế
+├── BR11 – Xử lý tài xế từ chối hoặc không phản hồi
+│   └── FR04 – Phân công tài xế
+├── BR12 – Thông báo không tìm được tài xế
+│   └── FR09 – Thông báo
+├── BR13 – Phân công tài xế
+│   └── FR04 – Phân công tài xế
+└── BR26 – Thông báo tài xế nhận chuyến
+    └── FR09 – Thông báo
+
+BP03 – Quy trình theo dõi chuyến đi
+BP03
+├── BR14 – Quản lý trạng thái chuyến đi
+│   └── FR05 – Quản lý chuyến đi
+├── BR15 – Theo dõi chuyến đi
+│   └── FR05 – Quản lý chuyến đi
+├── BR16 – Theo dõi thời gian dự kiến
+│   └── FR06 – Theo dõi vị trí
+├── BR26 – Thông báo tài xế đến điểm đón
+│   └── FR09 – Thông báo
+└── BR27 – Thông báo cho tài xế
+    └── FR09 – Thông báo
+
+BP04 – Quy trình quản lý tài xế
+BP04
+├── BR02 – Quản lý tài khoản tài xế
+│   └── FR01 – Quản lý tài khoản
+├── BR03 – Quản lý phương tiện
+│   └── FR11 – Quản lý vận hành
+├── BR05 – Quản lý trạng thái tài xế
+│   └── FR11 – Quản lý vận hành
+└── BR06 – Theo dõi vị trí tài xế
+    └── FR06 – Theo dõi vị trí
+
+BP05 – Quy trình quản lý chuyến đi
+BP05
+├── BR14 – Quản lý trạng thái chuyến đi
+│   └── FR05 – Quản lý chuyến đi
+├── BR17 – Xử lý chuyến bị hủy hoặc lỗi
+│   └── FR05 – Quản lý chuyến đi
+└── BR18 – Lưu lịch sử chuyến đi
+    └── FR14 – Quản lý lịch sử
+
+BP06 – Quy trình tính cước
+BP06
+└── BR19 – Tính cước chuyến đi
+    └── FR07 – Tính cước
+
+BP07 – Quy trình thanh toán
+BP07
+├── BR20 – Thanh toán tiền mặt
+│   └── FR08 – Thanh toán
+├── BR21 – Thanh toán điện tử
+│   └── FR08 – Thanh toán
+├── BR22 – Quản lý kết quả thanh toán
+│   └── FR08 – Thanh toán
+├── BR23 – Xử lý thanh toán thất bại
+│   └── FR08 – Thanh toán
+├── BR24 – Bảo vệ thông tin thanh toán
+│   └── FR08 – Thanh toán
+└── BR25 – Quản lý lịch sử giao dịch
+    └── FR14 – Quản lý lịch sử
+
+BP08 – Quy trình thông báo
+BP08
+├── BR26 – Thông báo trạng thái đặt xe
+│   └── FR09 – Thông báo
+├── BR27 – Thông báo cho tài xế
+│   └── FR09 – Thông báo
+├── BR28 – Mở rộng kênh thông báo
+│   └── FR09 – Thông báo
+└── BR42 – Đảm bảo tính độc lập của thành phần thông báo
+    └── FR09 – Thông báo
+
+BP09 – Quy trình đánh giá tài xế
+BP09
+├── BR29 – Đánh giá tài xế
+│   └── FR10 – Đánh giá tài xế
+└── BR30 – Quản lý phản hồi
+    └── FR10 – Đánh giá tài xế
+
+BP10 – Quy trình quản lý vận hành
+BP10
+├── BR04 – Quản lý quyền truy cập
+│   └── FR13 – Phân quyền
+├── BR31 – Quản lý khách hàng
+│   └── FR11 – Quản lý vận hành
+├── BR32 – Quản lý tài xế và phương tiện
+│   └── FR11 – Quản lý vận hành
+├── BR33 – Theo dõi chuyến đang diễn ra
+│   └── FR11 – Quản lý vận hành
+├── BR34 – Hỗ trợ xử lý sự cố
+│   └── FR11 – Quản lý vận hành
+├── BR38 – Kiểm soát quyền truy cập
+│   └── FR13 – Phân quyền
+└── BR40 – Lưu vết thao tác
+    └── FR13 – Phân quyền
+
+BP11 – Quy trình báo cáo hoạt động
+BP11
+├── BR35 – Báo cáo hoạt động
+│   └── FR12 – Báo cáo
+└── BR36 – Báo cáo hiệu quả tài xế
+    └── FR12 – Báo cáo
+
+BP12 – Quy trình bảo mật và phân quyền
+BP12
+├── BR01 – Quản lý tài khoản người dùng
+│   └── FR01 – Quản lý tài khoản
+├── BR37 – Xác thực người dùng
+│   └── FR01 – Quản lý tài khoản
+├── BR38 – Kiểm soát quyền truy cập
+│   └── FR13 – Phân quyền
+├── BR39 – Bảo vệ dữ liệu
+│   └── FR13 – Phân quyền
+└── BR40 – Lưu vết thao tác
+    └── FR13 – Phân quyền
+
+BP13 – Quy trình mở rộng và khả năng phát triển hệ thống
+BP13
+├── BR41 – Đảm bảo khả năng mở rộng
+│   └── FR11 – Quản lý vận hành
+├── BR42 – Đảm bảo tính độc lập của các thành phần
+│   └── FR09 – Thông báo
+├── BR43 – Hỗ trợ triển khai từng phần
+│   └── FR11 – Quản lý vận hành
+├── BR44 – Hỗ trợ mở rộng dịch vụ
+│   └── FR02 – Đặt xe
+├── BR45 – Hỗ trợ mở rộng phương thức thanh toán
+│   └── FR08 – Thanh toán
+└── BR46 – Hỗ trợ mở rộng nhà cung cấp thông báo
+    └── FR09 – Thông báo
