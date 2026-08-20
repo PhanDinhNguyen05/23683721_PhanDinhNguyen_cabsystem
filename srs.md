@@ -478,125 +478,238 @@ Các nội dung dưới đây cần được **Business Analyst xác nhận vớ
 | BR45 | Hỗ trợ mở rộng phương thức thanh toán | Hệ thống cho phép tích hợp thêm phương thức hoặc nhà cung cấp thanh toán trong tương lai. |
 | BR46 | Hỗ trợ mở rộng nhà cung cấp thông báo | Hệ thống cho phép thay đổi hoặc bổ sung nhà cung cấp thông báo mà không ảnh hưởng lớn đến hệ thống hiện tại. |
 
-# B6. Xây dựng Business Process
+## B6.  Business Process:
 
-## BP01. Quy trình đặt chuyến và phân công tài xế
+# Business Process – CAB System
 
-### Mục tiêu
+ 1. Quy trình đặt chuyến xe – BP01
 
-Xây dựng quy trình từ khi khách hàng tạo yêu cầu đặt chuyến cho đến khi hệ thống tìm được và xác nhận tài xế.
-
-### Business Process
-
-```text
-┌──────────────────────┐
-│      Khách hàng      │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│    Tạo chuyến đi     │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│    Nhập điểm đón     │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│    Nhập điểm đến     │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Chọn loại xe / dịch vụ│
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Hệ thống xác nhận    │
-│   yêu cầu đặt xe     │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│   Tìm tài xế phù hợp │
-└──────────┬───────────┘
-           │
-           ▼
-      ┌─────────────┐
-      │ Có tài xế   │
-      │ phù hợp?    │
-      └──────┬──────┘
-        Không│       │Có
-             │       ▼
-             │  ┌──────────────────────┐
-             │  │ Gửi yêu cầu nhận     │
-             │  │ chuyến cho tài xế    │
-             │  └──────────┬───────────┘
-             │             │
-             │             ▼
-             │       ┌─────────────┐
-             │       │ Tài xế phản │
-             │       │    hồi?     │
-             │       └──────┬──────┘
-             │         Không│       │Có
-             │              │       ▼
-             │              │  ┌───────────────┐
-             │              │  │ Tài xế chấp   │
-             │              │  │ nhận chuyến?  │
-             │              │  └───────┬───────┘
-             │              │      Không│     │Có
-             │              │           │     │
-             │              │           ▼     ▼
-             │              │      ┌────────┐ ┌──────────────────┐
-             │              │      │ Tìm tài│ │ Phân công tài xế │
-             │              │      │ xế khác│ │ cho chuyến đi    │
-             │              │      └────┬───┘ └────────┬─────────┘
-             │              │           │              │
-             │              └───────────┘              ▼
-             │                                   ┌───────────────┐
-             │                                   │ Xác nhận chuyến│
-             │                                   │     đi         │
-             │                                   └───────┬───────┘
-             │                                           │
-             │                                           ▼
-             │                                  ┌─────────────────┐
-             │                                  │ Thông báo cho   │
-             │                                  │    khách hàng   │
-             │                                  └───────┬─────────┘
-             │                                           │
-             │                                           ▼
-             │                                  ┌─────────────────┐
-             │                                  │ Chuyến đi được  │
-             │                                  │    xác nhận     │
-             │                                  └─────────────────┘
-             │
-             ▼
-┌─────────────────────────────┐
-│ Thông báo không tìm được    │
-│          tài xế             │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│ Kết thúc yêu cầu đặt chuyến │
-└─────────────────────────────┘
+```mermaid
+flowchart TD
+    A([Bắt đầu]) --> B[Khách hàng đăng nhập]
+    B --> C[Nhập vị trí hiện tại]
+    C --> D[Nhập điểm đón]
+    D --> E[Nhập điểm đến]
+    E --> F[Chọn loại xe]
+    F --> G[Gửi yêu cầu đặt xe]
+    G --> H[Hệ thống tiếp nhận yêu cầu]
+    H --> I[Thông báo yêu cầu đã được tiếp nhận]
+    I --> J([Chuyển sang tìm tài xế])
 ```
-Bước	Actor	Hoạt động	Kết quả
-1	Khách hàng	Tạo yêu cầu chuyến đi	Yêu cầu đặt xe được tạo
-2	Khách hàng	Nhập điểm đón	Lưu điểm đón
-3	Khách hàng	Nhập điểm đến	Lưu điểm đến
-4	Khách hàng	Chọn loại xe/dịch vụ	Xác định loại dịch vụ
-5	Hệ thống	Kiểm tra và xác nhận yêu cầu	Yêu cầu hợp lệ được tiếp nhận
-6	Hệ thống	Tìm tài xế phù hợp	Xác định tài xế phù hợp
-7	Hệ thống	Kiểm tra có tài xế phù hợp hay không	Có / Không
-8	Hệ thống	Không tìm thấy tài xế	Thông báo cho khách hàng
-9	Hệ thống	Gửi yêu cầu nhận chuyến cho tài xế	Tài xế nhận được yêu cầu
-10	Tài xế	Chấp nhận / từ chối / không phản hồi	Xác định kết quả
-11	Hệ thống	Tài xế từ chối hoặc không phản hồi	Tìm tài xế tiếp theo
-12	Hệ thống	Không còn tài xế phù hợp	Thông báo khách hàng
-13	Tài xế	Chấp nhận chuyến	Tài xế được phân công
-14	Hệ thống	Xác nhận chuyến đi	Chuyến được xác nhận
-15	Hệ thống	Thông báo cho khách hàng	Khách hàng biết tài xế đã nhận chuyến
+2. Quy trình tìm và phân công tài xế – BP02
+```mermaid
+flowchart TD
+    A([Nhận yêu cầu đặt xe]) --> B[Xác định các tài xế phù hợp]
+    B --> C[Kiểm tra vị trí tài xế]
+    C --> D[Kiểm tra trạng thái sẵn sàng]
+    D --> E[Ưu tiên tài xế phù hợp và gần khách hàng]
+    E --> F{Có tài xế phù hợp?}
+
+    F -- Không --> G[Thông báo không tìm được tài xế]
+    G --> H([Kết thúc])
+
+    F -- Có --> I[Gửi yêu cầu chuyến đến tài xế]
+    I --> J{Tài xế phản hồi?}
+
+    J -- Không --> K[Chờ hết thời gian phản hồi]
+    K --> L[Tìm tài xế tiếp theo]
+    L --> I
+
+    J -- Có --> M{Tài xế chấp nhận?}
+    M -- Không --> L
+    M -- Có --> N[Phân công chuyến cho tài xế]
+    N --> O[Thông báo cho khách hàng]
+    O --> P([Bắt đầu chuyến])
+```
+3. Quy trình theo dõi chuyến đi – BP03
+```mermaid
+flowchart TD
+    A([Tài xế nhận chuyến]) --> B[Hiển thị thông tin tài xế]
+    B --> C[Hiển thị vị trí tài xế]
+    C --> D[Tài xế di chuyển đến điểm đón]
+    D --> E{Tài xế đã đến?}
+
+    E -- Chưa --> C
+    E -- Rồi --> F[Cập nhật trạng thái đã đến]
+    F --> G[Thông báo cho khách hàng]
+    G --> H[Tài xế đón khách]
+    H --> I[Cập nhật trạng thái đã đón khách]
+    I --> J[Tài xế di chuyển đến điểm đến]
+    J --> K[Cập nhật trạng thái đang di chuyển]
+    K --> L[Hoàn thành chuyến]
+    L --> M[Cập nhật trạng thái hoàn thành]
+```
+4. Quy trình quản lý tài xế – BP04
+   ```mermaid
+   flowchart TD
+    A([Nhân viên vận hành]) --> B[Đăng ký hoặc tạo tài khoản tài xế]
+    B --> C[Nhập thông tin tài xế]
+    C --> D[Nhập thông tin phương tiện]
+    D --> E[Kiểm tra thông tin]
+    E --> F{Thông tin hợp lệ?}
+
+    F -- Không --> G[Yêu cầu cập nhật thông tin]
+    G --> C
+
+    F -- Có --> H[Tạo hồ sơ tài xế]
+    H --> I[Tài xế đăng nhập]
+    I --> J[Cập nhật trạng thái hoạt động]
+    J --> K{Sẵn sàng nhận chuyến?}
+
+    K -- Có --> L[Đưa tài xế vào danh sách có thể nhận chuyến]
+    K -- Không --> M[Không phân công chuyến]
+   ```
+5. Quy trình quản lý chuyến đi – BP05
+   ```mermaid
+    flowchart TD
+    A([Tạo yêu cầu]) --> B[Chờ tìm tài xế]
+    B --> C{Đã có tài xế?}
+
+    C -- Không --> D[Tiếp tục tìm tài xế]
+    D --> C
+
+    C -- Có --> E[Đã phân công tài xế]
+    E --> F[Tài xế đang đến]
+    F --> G[Đã đến điểm đón]
+    G --> H[Đã đón khách]
+    H --> I[Đang di chuyển]
+    I --> J[Hoàn thành chuyến]
+
+    B --> K{Khách hàng hủy?}
+    K -- Có --> L[Hủy chuyến]
+    K -- Không --> C
+
+    L --> M[Lưu thông tin hủy chuyến]
+    J --> N[Lưu thông tin chuyến]
+    ```
+6. Quy trình tính cước – BP06
+   ```mermaid
+   flowchart TD
+    A([Chuyến hoàn thành]) --> B[Lấy thông tin chuyến]
+    B --> C[Xác định loại dịch vụ]
+    C --> D[Xác định thông tin quãng đường và chuyến đi]
+    D --> E[Áp dụng quy tắc tính cước]
+    E --> F[Tính tổng tiền]
+    F --> G[Lưu thông tin cước]
+    G --> H[Thông báo số tiền phải trả cho khách hàng]
+    H --> I([Chuyển sang thanh toán])
+   ```
+7. Quy trình thanh toán – BP07
+   ```mermaid
+   flowchart TD
+    A([Nhận số tiền phải trả]) --> B{Chọn phương thức thanh toán}
+
+    B -- Tiền mặt --> C[Khách hàng thanh toán tiền mặt]
+    C --> D[Xác nhận thanh toán]
+    D --> E[Lưu giao dịch]
+
+    B -- Thanh toán điện tử --> F[Gửi yêu cầu đến nhà cung cấp thanh toán]
+    F --> G{Thanh toán thành công?}
+
+    G -- Có --> H[Nhận kết quả giao dịch]
+    H --> E
+
+    G -- Không --> I[Thông báo thanh toán thất bại]
+    I --> J{Khách hàng muốn thanh toán lại?}
+
+    J -- Có --> F
+    J -- Không --> K[Lưu giao dịch thất bại]
+
+    E --> L[Thông báo kết quả thanh toán]
+    K --> L
+   ```
+8. Quy trình thông báo – BP08
+    ```mermaid
+    flowchart TD
+    A([Có sự kiện trong hệ thống]) --> B{Loại sự kiện}
+
+    B -- Đặt xe --> C[Thông báo yêu cầu đã được tiếp nhận]
+    B -- Tài xế nhận chuyến --> D[Thông báo tài xế đã nhận chuyến]
+    B -- Tài xế đến --> E[Thông báo tài xế đã đến]
+    B -- Hoàn thành chuyến --> F[Thông báo chuyến đã hoàn thành]
+    B -- Thanh toán --> G[Thông báo kết quả thanh toán]
+    B -- Chuyến mới --> H[Thông báo cho tài xế]
+
+    C --> I[Gửi thông báo]
+    D --> I
+    E --> I
+    F --> I
+    G --> I
+    H --> I
+
+    I --> J([Kết thúc])
+    ```
+9. Quy trình đánh giá tài xế – BP09
+    ```mermaid
+    flowchart TD
+    A([Chuyến hoàn thành]) --> B[Hiển thị yêu cầu đánh giá]
+    B --> C[Khách hàng đánh giá tài xế]
+    C --> D[Nhập điểm đánh giá]
+    D --> E[Nhập nhận xét nếu có]
+    E --> F[Gửi đánh giá]
+    F --> G[Lưu đánh giá]
+    G --> H[Cập nhật dữ liệu đánh giá tài xế]
+    H --> I([Kết thúc])
+    ```
+10. Quy trình quản lý vận hành – BP10\
+    ```mermaid
+    flowchart TD
+    A([Nhân viên vận hành đăng nhập]) --> B[Xác thực tài khoản]
+    B --> C{Có quyền truy cập?}
+
+    C -- Không --> D[Từ chối truy cập]
+    D --> E([Kết thúc])
+
+    C -- Có --> F[Truy cập giao diện quản trị]
+    F --> G{Chọn chức năng}
+
+    G -- Quản lý khách hàng --> H[Thêm/Sửa/Xem khách hàng]
+    G -- Quản lý tài xế --> I[Thêm/Sửa/Xem tài xế]
+    G -- Quản lý phương tiện --> J[Thêm/Sửa/Xem phương tiện]
+    G -- Quản lý chuyến --> K[Xem và xử lý chuyến]
+    G -- Quản lý giao dịch --> L[Tra cứu giao dịch]
+
+    H --> M[Lưu thay đổi]
+    I --> M
+    J --> M
+    K --> M
+    L --> M
+
+    M --> N([Kết thúc])
+    ```
+11. Quy trình báo cáo hoạt động – BP11
+    ```mermaid
+    flowchart TD
+    A([Nhân viên/Quản lý yêu cầu báo cáo]) --> B[Chọn khoảng thời gian]
+    B --> C[Hệ thống lấy dữ liệu]
+    C --> D[Tổng hợp số lượng chuyến]
+    D --> E[Tổng hợp doanh thu]
+    E --> F[Tính tỷ lệ hoàn thành]
+    F --> G[Tính tỷ lệ hủy]
+    G --> H[Phân tích hiệu quả tài xế]
+    H --> I[Hiển thị báo cáo]
+    I --> J([Kết thúc])
+    ```
+12. Quy trình bảo mật và phân quyền – BP12
+     ```mermaid
+     flowchart TD
+    A([Người dùng truy cập hệ thống]) --> B[Nhập thông tin đăng nhập]
+    B --> C[Xác thực tài khoản]
+    C --> D{Thông tin hợp lệ?}
+
+    D -- Không --> E[Thông báo đăng nhập thất bại]
+    E --> F([Kết thúc])
+
+    D -- Có --> G[Xác định vai trò người dùng]
+    G --> H[Kiểm tra quyền truy cập]
+    H --> I{Có quyền thực hiện?}
+
+    I -- Không --> J[Từ chối thao tác]
+    J --> K[Ghi nhận log]
+    K --> L([Kết thúc])
+
+    I -- Có --> M[Cho phép thực hiện chức năng]
+    M --> N[Ghi nhận thao tác quan trọng]
+    N --> O[Bảo vệ dữ liệu]
+    O --> P([Kết thúc])
+     ````
