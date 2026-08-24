@@ -10,30 +10,6 @@ Hệ thống cần tích hợp với **cổng thanh toán điện tử và dịc
 
 ## 2. Business Problem – Vấn đề nghiệp vụ
 
-- Phân công tài xế còn **thủ công**, mất thời gian và khó tối ưu.
-- Khách hàng **khó theo dõi trạng thái chuyến đi**.
-- Thanh toán và giao dịch **chưa được quản lý tập trung**.
-- Nhân viên vận hành gặp khó khăn trong việc **quản lý khách hàng, tài xế, chuyến đi và xử lý sự cố**.
-- Khó tổng hợp dữ liệu để theo dõi **doanh thu, số chuyến, tỷ lệ hoàn thành và tỷ lệ hủy**.
-- Hệ thống **khó mở rộng** khi số lượng khách hàng và tài xế tăng.
-
-## 3. Mục tiêu kinh doanh
-
-- Tự động hóa quy trình đặt xe và phân công tài xế.
-- Nâng cao trải nghiệm và khả năng theo dõi chuyến của khách hàng.
-- Quản lý tập trung chuyến đi, thanh toán và dữ liệu vận hành.
-- Giảm thao tác thủ công và nâng cao hiệu quả của nhân viên.
-- Xây dựng hệ thống **ổn định, bảo mật và có khả năng mở rộng**.
-
-## 4. Giá trị của hệ thống mới
-
-CAB System giúp **tự động hóa việc tìm tài xế, theo dõi chuyến, thanh toán và thông báo**, đồng thời cung cấp dữ liệu phục vụ quản lý và báo cáo — **giảm thời gian xử lý, nâng cao chất lượng dịch vụ, tăng hiệu quả vận hành và tạo nền tảng để doanh nghiệp mở rộng trong tương lai**.
-
----
-
-
-## 2. Business Problem – Vấn đề nghiệp vụ
-
 Hệ thống hiện tại tồn tại các vấn đề:
 
 - Phân công tài xế còn **thủ công**, mất thời gian và khó tối ưu.
