@@ -725,135 +725,60 @@ BP13 – Nguyên tắc kiến trúc mở rộng
 | SC14 | BG08 | Hỗ trợ báo cáo hoạt động | Có đủ số liệu: số chuyến, doanh thu, tỷ lệ hoàn thành/hủy, hiệu quả tài xế. |
 
 ---
-## B9. Mô hình hóa hệ thống – Mô hình dữ liệu
 
-### 9.1. Xác định các thực thể và thuộc tính
+# B9. Mô hình hóa hệ thống – Mô hình dữ liệu
+
+## 9.1. Các thực thể và thuộc tính
 
 | Thực thể | Thuộc tính |
 |---|---|
-| **Khách hàng (Customer)** | CustomerID, FullName, Email, Phone, Password, Address, CreatedAt, Status |
-| **Tài xế (Driver)** | DriverID, FullName, Email, Phone, Password, LicenseNumber, Status, CurrentLocation, CreatedAt |
-| **Phương tiện (Vehicle)** | VehicleID, DriverID, VehicleType, LicensePlate, Brand, Model, Color, Status |
-| **Chuyến đi (Trip)** | TripID, CustomerID, DriverID, VehicleID, BookingID, PickupLocation, Destination, Distance, StartTime, EndTime, Status, Fare |
-| **Yêu cầu đặt xe (Booking)** | BookingID, CustomerID, PickupLocation, Destination, VehicleType, BookingTime, Status |
-| **Thanh toán (Payment)** | PaymentID, TripID, PaymentMethod, Amount, PaymentTime, PaymentStatus, TransactionCode |
-| **Đánh giá (Rating)** | RatingID, TripID, CustomerID, DriverID, RatingScore, Comment, CreatedAt |
-| **Thông báo (Notification)** | NotificationID, UserID, Title, Content, NotificationType, SentAt, Status |
-| **Nhân viên vận hành (Staff)** | StaffID, FullName, Email, Phone, Password, Role, Status |
-| **Log hệ thống (AuditLog)** | LogID, UserID, Action, Description, CreatedAt, IPAddress |
+| Khách hàng (Customer) | CustomerID, FullName, Email, Phone, Password, Address, CreatedAt, Status |
+| Tài xế (Driver) | DriverID, FullName, Email, Phone, Password, LicenseNumber, Status, CurrentLocation, CreatedAt |
+| Phương tiện (Vehicle) | VehicleID, DriverID, VehicleType, LicensePlate, Brand, Model, Color, Status |
+| Chuyến đi (Trip) | TripID, CustomerID, DriverID, VehicleID, BookingID, PickupLocation, Destination, Distance, StartTime, EndTime, Status, Fare |
+| Yêu cầu đặt xe (Booking) | BookingID, CustomerID, PickupLocation, Destination, VehicleType, BookingTime, Status |
+| Thanh toán (Payment) | PaymentID, TripID, PaymentMethod, Amount, PaymentTime, PaymentStatus, TransactionCode |
+| Đánh giá (Rating) | RatingID, TripID, CustomerID, DriverID, RatingScore, Comment, CreatedAt |
+| Thông báo (Notification) | NotificationID, UserID, Title, Content, NotificationType, SentAt, Status |
+| Nhân viên vận hành (Staff) | StaffID, FullName, Email, Phone, Password, Role, Status |
+| Log hệ thống (AuditLog) | LogID, UserID, Action, Description, CreatedAt, IPAddress |
 
-### 9.2. Mô tả một số thực thể chính
+## 9.2. Mô tả một số thực thể chính
 
-#### Customer – Khách hàng
+**Customer:** CustomerID, FullName, Email (đăng nhập), Phone, Password, Address, CreatedAt, Status.
+**Driver:** DriverID, FullName, Email, Phone, Password, LicenseNumber, Status, CurrentLocation, CreatedAt.
+**Vehicle:** VehicleID, DriverID, VehicleType, LicensePlate, Brand, Model, Color, Status.
+**Booking:** BookingID, CustomerID, PickupLocation, Destination, VehicleType, BookingTime, Status.
+**Trip:** TripID, BookingID, CustomerID, DriverID, VehicleID, PickupLocation, Destination, Distance, StartTime, EndTime, Status, Fare.
+**Payment:** PaymentID, TripID, PaymentMethod, Amount, PaymentTime, PaymentStatus, TransactionCode.
 
-- **CustomerID:** Mã khách hàng.
-- **FullName:** Họ và tên.
-- **Email:** Email đăng nhập.
-- **Phone:** Số điện thoại.
-- **Password:** Mật khẩu tài khoản.
-- **Address:** Địa chỉ.
-- **CreatedAt:** Ngày tạo tài khoản.
-- **Status:** Trạng thái tài khoản.
+## 9.3. Quan hệ giữa các thực thể
 
-#### Driver – Tài xế
+- Customer 1–N Booking; Customer 1–N Trip; Customer 1–N Rating.
+- Driver 1–N Trip; Driver 1–N Vehicle; Driver 1–N Rating.
+- Vehicle 1–N Trip.
+- Booking 1–1 Trip.
+- Trip 1–1 Payment; Trip 1–0..1 Rating.
+- User 1–N Notification; User 1–N AuditLog.
 
-- **DriverID:** Mã tài xế.
-- **FullName:** Họ và tên.
-- **Email:** Email.
-- **Phone:** Số điện thoại.
-- **Password:** Mật khẩu.
-- **LicenseNumber:** Số giấy phép lái xe.
-- **Status:** Trạng thái hoạt động.
-- **CurrentLocation:** Vị trí hiện tại.
-- **CreatedAt:** Ngày tạo tài khoản.
-
-#### Vehicle – Phương tiện
-
-- **VehicleID:** Mã phương tiện.
-- **DriverID:** Mã tài xế.
-- **VehicleType:** Loại xe.
-- **LicensePlate:** Biển số xe.
-- **Brand:** Hãng xe.
-- **Model:** Mẫu xe.
-- **Color:** Màu xe.
-- **Status:** Trạng thái phương tiện.
-
-#### Booking – Yêu cầu đặt xe
-
-- **BookingID:** Mã yêu cầu đặt xe.
-- **CustomerID:** Mã khách hàng.
-- **PickupLocation:** Điểm đón.
-- **Destination:** Điểm đến.
-- **VehicleType:** Loại xe yêu cầu.
-- **BookingTime:** Thời gian tạo yêu cầu.
-- **Status:** Trạng thái yêu cầu.
-
-#### Trip – Chuyến đi
-
-- **TripID:** Mã chuyến.
-- **BookingID:** Mã yêu cầu đặt xe.
-- **CustomerID:** Mã khách hàng.
-- **DriverID:** Mã tài xế.
-- **VehicleID:** Mã phương tiện.
-- **PickupLocation:** Điểm đón.
-- **Destination:** Điểm đến.
-- **Distance:** Quãng đường.
-- **StartTime:** Thời gian bắt đầu.
-- **EndTime:** Thời gian kết thúc.
-- **Status:** Trạng thái chuyến.
-- **Fare:** Cước phí.
-
-#### Payment – Thanh toán
-
-- **PaymentID:** Mã thanh toán.
-- **TripID:** Mã chuyến.
-- **PaymentMethod:** Phương thức thanh toán.
-- **Amount:** Số tiền.
-- **PaymentTime:** Thời gian thanh toán.
-- **PaymentStatus:** Trạng thái thanh toán.
-- **TransactionCode:** Mã giao dịch từ nhà cung cấp thanh toán.
-
-### 9.3. Quan hệ giữa các thực thể
-
-- **Customer 1 - N Booking:** Một khách hàng có thể tạo nhiều yêu cầu đặt xe.
-- **Customer 1 - N Trip:** Một khách hàng có thể thực hiện nhiều chuyến.
-- **Driver 1 - N Trip:** Một tài xế có thể thực hiện nhiều chuyến.
-- **Driver 1 - N Vehicle:** Một tài xế có thể quản lý nhiều phương tiện.
-- **Vehicle 1 - N Trip:** Một phương tiện có thể được sử dụng cho nhiều chuyến.
-- **Booking 1 - 1 Trip:** Một yêu cầu đặt xe có thể tạo ra một chuyến đi.
-- **Trip 1 - 1 Payment:** Một chuyến đi có một giao dịch thanh toán chính.
-- **Trip 1 - 0..1 Rating:** Một chuyến đi có thể có tối đa một đánh giá.
-- **Customer 1 - N Rating:** Một khách hàng có thể tạo nhiều đánh giá.
-- **Driver 1 - N Rating:** Một tài xế có thể nhận nhiều đánh giá.
-- **User 1 - N Notification:** Một người dùng có thể nhận nhiều thông báo.
-- **User 1 - N AuditLog:** Một người dùng có thể tạo nhiều log thao tác.
-
-### 9.4. Các thực thể cốt lõi của MVP
-
-Trong phạm vi MVP 7 tuần, các thực thể quan trọng nhất là:
+## 9.4. Các thực thể cốt lõi của MVP
 
 **Customer → Driver → Vehicle → Booking → Trip → Payment → Rating**
 
-### 9.5. Sơ đồ ERD
+## 9.5. Sơ đồ ERD
 
 ```mermaid
 erDiagram
-
     CUSTOMER ||--o{ BOOKING : "tạo"
     CUSTOMER ||--o{ TRIP : "thực hiện"
     CUSTOMER ||--o{ RATING : "đánh giá"
-
     DRIVER ||--o{ TRIP : "thực hiện"
     DRIVER ||--o{ VEHICLE : "sở hữu/quản lý"
     DRIVER ||--o{ RATING : "nhận"
-
     VEHICLE ||--o{ TRIP : "sử dụng"
-
     BOOKING ||--o| TRIP : "tạo thành"
-
     TRIP ||--o| PAYMENT : "thanh toán"
     TRIP ||--o| RATING : "có đánh giá"
-
     USER ||--o{ NOTIFICATION : "nhận"
     USER ||--o{ AUDIT_LOG : "tạo"
 
@@ -867,7 +792,6 @@ erDiagram
         datetime CreatedAt
         string Status
     }
-
     DRIVER {
         int DriverID PK
         string FullName
@@ -879,7 +803,6 @@ erDiagram
         string CurrentLocation
         datetime CreatedAt
     }
-
     VEHICLE {
         int VehicleID PK
         int DriverID FK
@@ -890,7 +813,6 @@ erDiagram
         string Color
         string Status
     }
-
     BOOKING {
         int BookingID PK
         int CustomerID FK
@@ -900,7 +822,6 @@ erDiagram
         datetime BookingTime
         string Status
     }
-
     TRIP {
         int TripID PK
         int BookingID FK
@@ -915,7 +836,6 @@ erDiagram
         string Status
         decimal Fare
     }
-
     PAYMENT {
         int PaymentID PK
         int TripID FK
@@ -925,7 +845,6 @@ erDiagram
         string PaymentStatus
         string TransactionCode
     }
-
     RATING {
         int RatingID PK
         int TripID FK
@@ -935,12 +854,10 @@ erDiagram
         string Comment
         datetime CreatedAt
     }
-
     USER {
         int UserID PK
         string UserType
     }
-
     NOTIFICATION {
         int NotificationID PK
         int UserID FK
@@ -950,7 +867,6 @@ erDiagram
         datetime SentAt
         string Status
     }
-
     AUDIT_LOG {
         int LogID PK
         int UserID FK
@@ -960,6 +876,9 @@ erDiagram
         string IPAddress
     }
 ```
+
+---
+
 ## B10. Xác định Non-Functional Requirements
 
 | Mã NFR | Nhóm yêu cầu | Non-Functional Requirement |
