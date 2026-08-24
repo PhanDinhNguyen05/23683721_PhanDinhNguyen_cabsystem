@@ -906,13 +906,15 @@ erDiagram
 
 ---
 
-## B11. Xác định và vẽ Use Case
+# B11. Xác định và vẽ Use Case (UC01–UC20) — 🟢 toàn bộ thuộc MVP
+
 ```mermaid
 flowchart LR
-    Customer((Customer))
-    Driver((Driver))
-    Staff((Operation Staff))
-    Admin((Administrator))
+    Customer((Khách hàng))
+    Driver((Tài xế))
+    Staff((Nhân viên vận hành))
+    Admin((Quản trị viên))
+    PaymentProvider((Nhà cung cấp<br>thanh toán))
 
     subgraph CAB["CAB SYSTEM"]
         UC01([UC01 - Đăng ký tài khoản])
@@ -925,6 +927,16 @@ flowchart LR
         UC08([UC08 - Theo dõi chuyến đi])
         UC09([UC09 - Tính cước])
         UC10([UC10 - Thanh toán])
+        UC11([UC11 - Xem lịch sử chuyến])
+        UC12([UC12 - Đánh giá tài xế])
+        UC13([UC13 - Quản lý hồ sơ và phương tiện])
+        UC14([UC14 - Cập nhật vị trí])
+        UC15([UC15 - Quản lý khách hàng])
+        UC16([UC16 - Quản lý tài xế])
+        UC17([UC17 - Quản lý chuyến đi])
+        UC18([UC18 - Xử lý sự cố])
+        UC19([UC19 - Quản lý tài khoản và phân quyền])
+        UC20([UC20 - Xem báo cáo])
     end
 
     Customer --- UC01
@@ -933,405 +945,350 @@ flowchart LR
     Customer --- UC04
     Customer --- UC08
     Customer --- UC10
+    Customer --- UC11
+    Customer --- UC12
 
     Driver --- UC02
     Driver --- UC03
     Driver --- UC06
     Driver --- UC07
+    Driver --- UC13
+    Driver --- UC14
 
     Staff --- UC02
+    Staff --- UC15
+    Staff --- UC16
+    Staff --- UC17
+    Staff --- UC18
+
     Admin --- UC02
+    Admin --- UC19
+    Admin --- UC20
+
+    UC05 -. hệ thống tự động thực hiện .-> Driver
+    UC09 -. hệ thống tự động thực hiện .-> Customer
+    UC10 --- PaymentProvider
 ```
-# Đặc tả User Case
+
+# Đặc tả Use Case
 
 ## UC01 – Đăng ký tài khoản
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC01 |
-| **Tên** | Đăng ký tài khoản |
-| **Actor** | Khách hàng |
-| **Mục tiêu** | Tạo tài khoản để sử dụng dịch vụ CAB |
-| **Tiền điều kiện** | Khách hàng chưa có tài khoản |
-| **Luồng chính** | 1. Khách hàng chọn chức năng đăng ký.<br>2. Nhập họ tên, email, số điện thoại và mật khẩu.<br>3. Hệ thống kiểm tra thông tin.<br>4. Hệ thống tạo tài khoản.<br>5. Hệ thống thông báo đăng ký thành công. |
-| **Ngoại lệ** | Email hoặc số điện thoại đã tồn tại → hệ thống thông báo lỗi và yêu cầu nhập lại. |
-| **Hậu điều kiện** | Tài khoản khách hàng được tạo thành công. |
-
----
+| Actor | Khách hàng |
+| Mục tiêu | Tạo tài khoản để sử dụng dịch vụ CAB |
+| Tiền điều kiện | Khách hàng chưa có tài khoản |
+| Luồng chính | 1. Chọn chức năng đăng ký. 2. Nhập họ tên, email, SĐT, mật khẩu. 3. Hệ thống kiểm tra thông tin. 4. Tạo tài khoản. 5. Thông báo thành công. |
+| Ngoại lệ | Email/SĐT đã tồn tại → thông báo lỗi, yêu cầu nhập lại. |
+| Hậu điều kiện | Tài khoản khách hàng được tạo thành công. |
 
 ## UC02 – Đăng nhập
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC02 |
-| **Tên** | Đăng nhập |
-| **Actor** | Khách hàng, Tài xế, Nhân viên vận hành, Quản trị viên |
-| **Mục tiêu** | Xác thực người dùng để sử dụng các chức năng của hệ thống |
-| **Tiền điều kiện** | Người dùng đã có tài khoản |
-| **Luồng chính** | 1. Người dùng mở chức năng đăng nhập.<br>2. Nhập email/số điện thoại và mật khẩu.<br>3. Hệ thống kiểm tra thông tin đăng nhập.<br>4. Hệ thống xác định vai trò của người dùng.<br>5. Hệ thống cho phép truy cập các chức năng tương ứng với vai trò. |
-| **Ngoại lệ** | Thông tin đăng nhập không chính xác → hệ thống thông báo lỗi và yêu cầu nhập lại. |
-| **Hậu điều kiện** | Người dùng đăng nhập thành công và được cấp quyền truy cập phù hợp. |
-
----
+| Actor | Khách hàng, Tài xế, Nhân viên vận hành, Quản trị viên |
+| Mục tiêu | Xác thực người dùng |
+| Tiền điều kiện | Người dùng đã có tài khoản |
+| Luồng chính | 1. Mở chức năng đăng nhập. 2. Nhập email/SĐT và mật khẩu. 3. Kiểm tra thông tin. 4. Xác định vai trò. 5. Cho phép truy cập chức năng tương ứng. |
+| Ngoại lệ | Thông tin sai → thông báo lỗi, yêu cầu nhập lại. |
+| Hậu điều kiện | Đăng nhập thành công, được cấp quyền phù hợp. |
 
 ## UC03 – Quản lý thông tin cá nhân
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC03 |
-| **Tên** | Quản lý thông tin cá nhân |
-| **Actor** | Khách hàng, Tài xế |
-| **Mục tiêu** | Cho phép người dùng xem và cập nhật thông tin cá nhân |
-| **Tiền điều kiện** | Người dùng đã đăng nhập |
-| **Luồng chính** | 1. Người dùng mở chức năng thông tin cá nhân.<br>2. Hệ thống hiển thị thông tin hiện tại.<br>3. Người dùng chỉnh sửa thông tin cần thay đổi.<br>4. Người dùng chọn lưu.<br>5. Hệ thống kiểm tra dữ liệu.<br>6. Hệ thống cập nhật thông tin. |
-| **Ngoại lệ** | Thông tin không hợp lệ → hệ thống thông báo lỗi và yêu cầu người dùng nhập lại. |
-| **Hậu điều kiện** | Thông tin cá nhân được cập nhật thành công. |
-
----
+| Actor | Khách hàng, Tài xế |
+| Mục tiêu | Xem và cập nhật thông tin cá nhân |
+| Tiền điều kiện | Đã đăng nhập |
+| Luồng chính | 1. Mở chức năng. 2. Xem thông tin hiện tại. 3. Chỉnh sửa. 4. Lưu. 5. Kiểm tra dữ liệu. 6. Cập nhật. |
+| Ngoại lệ | Thông tin không hợp lệ → yêu cầu nhập lại. |
+| Hậu điều kiện | Thông tin cá nhân được cập nhật. |
 
 ## UC04 – Đặt chuyến xe
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC04 |
-| **Tên** | Đặt chuyến xe |
-| **Actor** | Khách hàng |
-| **Mục tiêu** | Cho phép khách hàng tạo yêu cầu đặt chuyến xe |
-| **Tiền điều kiện** | Khách hàng đã đăng nhập |
-| **Luồng chính** | 1. Khách hàng chọn chức năng đặt xe.<br>2. Nhập điểm đón.<br>3. Nhập điểm đến.<br>4. Chọn loại xe/dịch vụ.<br>5. Hệ thống hiển thị thông tin chuyến và cước dự kiến.<br>6. Khách hàng xác nhận đặt xe.<br>7. Hệ thống tạo yêu cầu đặt chuyến.<br>8. Hệ thống bắt đầu tìm tài xế phù hợp. |
-| **Ngoại lệ** | Điểm đón, điểm đến hoặc thông tin chuyến không hợp lệ → hệ thống yêu cầu nhập lại.<br><br>Không có tài xế phù hợp → hệ thống thông báo cho khách hàng. |
-| **Hậu điều kiện** | Yêu cầu đặt chuyến được tạo và chuyển sang quá trình tìm tài xế. |
-
----
+| Actor | Khách hàng |
+| Mục tiêu | Tạo yêu cầu đặt chuyến xe |
+| Tiền điều kiện | Khách hàng đã đăng nhập |
+| Luồng chính | 1. Chọn đặt xe. 2. Nhập điểm đón. 3. Nhập điểm đến. 4. Chọn loại xe. 5. Xem cước dự kiến. 6. Xác nhận. 7. Tạo yêu cầu. 8. Bắt đầu tìm tài xế. |
+| Ngoại lệ | Thông tin không hợp lệ → nhập lại. Không có tài xế phù hợp → thông báo. |
+| Hậu điều kiện | Yêu cầu đặt chuyến được tạo, chuyển sang tìm tài xế. |
 
 ## UC05 – Tìm và phân công tài xế
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC05 |
-| **Tên** | Tìm và phân công tài xế |
-| **Actor** | Hệ thống |
-| **Mục tiêu** | Tìm tài xế phù hợp và phân công tài xế cho chuyến xe |
-| **Tiền điều kiện** | Có yêu cầu đặt chuyến đang chờ tài xế |
-| **Luồng chính** | 1. Hệ thống nhận yêu cầu đặt chuyến.<br>2. Hệ thống lấy thông tin vị trí điểm đón.<br>3. Tìm các tài xế đang ở trạng thái sẵn sàng.<br>4. Hệ thống lựa chọn tài xế phù hợp, ưu tiên tài xế ở gần điểm đón.<br>5. Hệ thống gửi yêu cầu nhận chuyến cho tài xế.<br>6. Tài xế chấp nhận chuyến.<br>7. Hệ thống phân công tài xế cho chuyến.<br>8. Hệ thống thông báo thông tin tài xế cho khách hàng. |
-| **Ngoại lệ** | Tài xế từ chối hoặc không phản hồi → hệ thống tiếp tục tìm tài xế khác.<br><br>Không tìm được tài xế → hệ thống thông báo cho khách hàng. |
-| **Hậu điều kiện** | Chuyến xe được phân công tài xế hoặc yêu cầu đặt chuyến được thông báo không thành công. |
-
----
+| Actor | Hệ thống |
+| Mục tiêu | Tìm và phân công tài xế phù hợp |
+| Tiền điều kiện | Có yêu cầu đặt chuyến chờ tài xế |
+| Luồng chính | 1. Nhận yêu cầu. 2. Lấy vị trí điểm đón. 3. Tìm tài xế sẵn sàng. 4. Chọn ưu tiên gần nhất. 5. Gửi yêu cầu nhận chuyến. 6. Tài xế chấp nhận. 7. Phân công. 8. Thông báo khách hàng. |
+| Ngoại lệ | Từ chối/không phản hồi → tìm tiếp. Không tìm được → thông báo. |
+| Hậu điều kiện | Chuyến được phân công hoặc thông báo không thành công. |
 
 ## UC06 – Chấp nhận/Từ chối chuyến
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC06 |
-| **Tên** | Chấp nhận/Từ chối chuyến |
-| **Actor** | Tài xế |
-| **Mục tiêu** | Cho phép tài xế phản hồi yêu cầu chuyến xe |
-| **Tiền điều kiện** | Tài xế đã đăng nhập, đang ở trạng thái sẵn sàng và nhận được yêu cầu chuyến |
-| **Luồng chính** | 1. Tài xế nhận thông báo có chuyến mới.<br>2. Tài xế xem thông tin chuyến.<br>3. Tài xế chọn chấp nhận hoặc từ chối chuyến.<br>4. Hệ thống ghi nhận lựa chọn của tài xế.<br>5. Nếu chấp nhận, hệ thống phân công chuyến cho tài xế.<br>6. Nếu từ chối, hệ thống chuyển yêu cầu sang quá trình tìm tài xế khác. |
-| **Ngoại lệ** | Tài xế không phản hồi trong thời gian quy định → hệ thống tự động chuyển sang tìm tài xế khác. |
-| **Hậu điều kiện** | Chuyến được tài xế chấp nhận hoặc được chuyển sang tài xế khác. |
-
----
+| Actor | Tài xế |
+| Mục tiêu | Phản hồi yêu cầu chuyến xe |
+| Tiền điều kiện | Tài xế sẵn sàng và nhận được yêu cầu chuyến |
+| Luồng chính | 1. Nhận thông báo chuyến mới. 2. Xem thông tin. 3. Chấp nhận/từ chối. 4. Ghi nhận lựa chọn. 5. Nếu chấp nhận → phân công. 6. Nếu từ chối → tìm tài xế khác. |
+| Ngoại lệ | Không phản hồi đúng hạn → tự động chuyển tài xế khác. |
+| Hậu điều kiện | Chuyến được chấp nhận hoặc chuyển tài xế khác. |
 
 ## UC07 – Cập nhật trạng thái chuyến
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC07 |
-| **Tên** | Cập nhật trạng thái chuyến |
-| **Actor** | Tài xế |
-| **Mục tiêu** | Cập nhật trạng thái và tiến trình thực hiện chuyến xe |
-| **Tiền điều kiện** | Tài xế đã được phân công chuyến |
-| **Luồng chính** | 1. Tài xế xác nhận đã nhận chuyến.<br>2. Tài xế di chuyển đến điểm đón.<br>3. Tài xế cập nhật trạng thái đã đến điểm đón.<br>4. Tài xế đón khách và cập nhật trạng thái đã đón khách.<br>5. Tài xế bắt đầu di chuyển đến điểm đến.<br>6. Tài xế cập nhật trạng thái đang di chuyển.<br>7. Khi đến điểm đến, tài xế cập nhật trạng thái hoàn thành chuyến. |
-| **Ngoại lệ** | Mất kết nối mạng → hệ thống lưu trạng thái tạm thời và đồng bộ lại khi kết nối được khôi phục. |
-| **Hậu điều kiện** | Trạng thái chuyến được cập nhật chính xác trên hệ thống. |
-
----
+| Actor | Tài xế |
+| Mục tiêu | Cập nhật tiến trình thực hiện chuyến |
+| Tiền điều kiện | Tài xế đã được phân công chuyến |
+| Luồng chính | 1. Nhận chuyến. 2. Di chuyển đến điểm đón. 3. Cập nhật đã đến. 4. Đón khách, cập nhật đã đón. 5. Di chuyển đến điểm đến. 6. Cập nhật đang di chuyển. 7. Cập nhật hoàn thành. |
+| Ngoại lệ | Mất kết nối → lưu tạm và đồng bộ khi có mạng lại. |
+| Hậu điều kiện | Trạng thái chuyến được cập nhật chính xác. |
 
 ## UC08 – Theo dõi chuyến đi
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC08 |
-| **Tên** | Theo dõi chuyến đi |
-| **Actor** | Khách hàng |
-| **Mục tiêu** | Cho phép khách hàng theo dõi vị trí và trạng thái chuyến xe |
-| **Tiền điều kiện** | Chuyến xe đã được phân công tài xế |
-| **Luồng chính** | 1. Khách hàng mở thông tin chuyến đang thực hiện.<br>2. Hệ thống hiển thị thông tin tài xế và phương tiện.<br>3. Hệ thống hiển thị vị trí hiện tại của tài xế trên bản đồ.<br>4. Hệ thống hiển thị trạng thái chuyến.<br>5. Hệ thống liên tục cập nhật vị trí và trạng thái trong quá trình di chuyển. |
-| **Ngoại lệ** | Không nhận được dữ liệu vị trí → hệ thống thông báo vị trí hiện tại không khả dụng và tiếp tục thử cập nhật. |
-| **Hậu điều kiện** | Khách hàng nắm được vị trí và trạng thái hiện tại của chuyến xe. |
-
----
+| Actor | Khách hàng |
+| Mục tiêu | Theo dõi vị trí và trạng thái chuyến xe |
+| Tiền điều kiện | Chuyến đã được phân công tài xế |
+| Luồng chính | 1. Mở thông tin chuyến. 2. Xem thông tin tài xế/phương tiện. 3. Xem vị trí trên bản đồ. 4. Xem trạng thái. 5. Cập nhật liên tục. |
+| Ngoại lệ | Không có dữ liệu vị trí → thông báo và thử lại. |
+| Hậu điều kiện | Khách hàng nắm được vị trí/trạng thái hiện tại. |
 
 ## UC09 – Tính cước
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC09 |
-| **Tên** | Tính cước |
-| **Actor** | Hệ thống |
-| **Mục tiêu** | Xác định số tiền khách hàng phải thanh toán cho chuyến xe |
-| **Tiền điều kiện** | Chuyến xe đã hoàn thành |
-| **Luồng chính** | 1. Hệ thống lấy thông tin chuyến xe.<br>2. Xác định loại dịch vụ và phương tiện.<br>3. Lấy thông tin quãng đường, thời gian và các phụ phí nếu có.<br>4. Hệ thống áp dụng quy tắc tính cước.<br>5. Tính tổng số tiền phải thanh toán.<br>6. Lưu thông tin cước.<br>7. Thông báo số tiền cho khách hàng. |
-| **Ngoại lệ** | Thiếu dữ liệu chuyến hoặc dữ liệu không hợp lệ → hệ thống chuyển yêu cầu sang nhân viên vận hành xử lý. |
-| **Hậu điều kiện** | Số tiền phải thanh toán được xác định và lưu vào hệ thống. |
-
----
+| Actor | Hệ thống |
+| Mục tiêu | Xác định số tiền phải thanh toán |
+| Tiền điều kiện | Chuyến đã hoàn thành |
+| Luồng chính | 1. Lấy thông tin chuyến. 2. Xác định loại dịch vụ. 3. Lấy quãng đường/thời gian. 4. Áp quy tắc tính cước. 5. Tính tổng tiền. 6. Lưu cước. 7. Thông báo khách hàng. |
+| Ngoại lệ | Thiếu dữ liệu → chuyển nhân viên vận hành xử lý. |
+| Hậu điều kiện | Số tiền được xác định và lưu vào hệ thống. |
 
 ## UC10 – Thanh toán
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC10 |
-| **Tên** | Thanh toán |
-| **Actor** | Khách hàng, Nhà cung cấp thanh toán |
-| **Mục tiêu** | Cho phép khách hàng thanh toán chi phí chuyến xe |
-| **Tiền điều kiện** | Chuyến xe đã hoàn thành và hệ thống đã xác định số tiền phải trả |
-| **Luồng chính** | 1. Khách hàng xem số tiền cần thanh toán.<br>2. Khách hàng lựa chọn phương thức thanh toán.<br>3. Nếu thanh toán tiền mặt, hệ thống ghi nhận trạng thái thanh toán.<br>4. Nếu thanh toán điện tử, hệ thống gửi yêu cầu đến nhà cung cấp thanh toán.<br>5. Nhà cung cấp thanh toán xử lý giao dịch.<br>6. Hệ thống nhận kết quả giao dịch.<br>7. Hệ thống lưu thông tin thanh toán.<br>8. Hệ thống thông báo kết quả cho khách hàng. |
-| **Ngoại lệ** | Thanh toán điện tử thất bại → hệ thống thông báo lỗi và cho phép khách hàng thực hiện thanh toán lại theo chính sách. |
-| **Hậu điều kiện** | Giao dịch được ghi nhận với trạng thái thành công hoặc thất bại. |
-
----
+| Actor | Khách hàng, Nhà cung cấp thanh toán |
+| Mục tiêu | Thanh toán chi phí chuyến xe |
+| Tiền điều kiện | Chuyến hoàn thành, đã xác định số tiền |
+| Luồng chính | 1. Xem số tiền. 2. Chọn phương thức. 3. Tiền mặt → ghi nhận. 4. Điện tử → gửi Payment Provider. 5. Xử lý giao dịch. 6. Nhận kết quả. 7. Lưu thông tin. 8. Thông báo kết quả. |
+| Ngoại lệ | Thất bại → thông báo lỗi, cho phép thanh toán lại. |
+| Hậu điều kiện | Giao dịch ghi nhận thành công/thất bại. |
 
 ## UC11 – Xem lịch sử chuyến
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC11 |
-| **Tên** | Xem lịch sử chuyến |
-| **Actor** | Khách hàng |
-| **Mục tiêu** | Cho phép khách hàng xem lại các chuyến xe đã thực hiện |
-| **Tiền điều kiện** | Khách hàng đã đăng nhập |
-| **Luồng chính** | 1. Khách hàng chọn chức năng lịch sử chuyến.<br>2. Hệ thống lấy danh sách các chuyến đã thực hiện.<br>3. Hệ thống hiển thị thông tin chuyến gồm thời gian, điểm đón, điểm đến, tài xế, cước phí và trạng thái.<br>4. Khách hàng chọn một chuyến để xem chi tiết. |
-| **Ngoại lệ** | Không có chuyến trong lịch sử → hệ thống thông báo chưa có dữ liệu lịch sử. |
-| **Hậu điều kiện** | Khách hàng xem được lịch sử và chi tiết các chuyến đã thực hiện. |
-
----
+| Actor | Khách hàng |
+| Mục tiêu | Xem lại các chuyến đã thực hiện |
+| Tiền điều kiện | Đã đăng nhập |
+| Luồng chính | 1. Chọn lịch sử chuyến. 2. Lấy danh sách. 3. Hiển thị thông tin. 4. Chọn xem chi tiết. |
+| Ngoại lệ | Không có dữ liệu → thông báo chưa có lịch sử. |
+| Hậu điều kiện | Khách hàng xem được lịch sử/chi tiết chuyến. |
 
 ## UC12 – Đánh giá tài xế
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC12 |
-| **Tên** | Đánh giá tài xế |
-| **Actor** | Khách hàng |
-| **Mục tiêu** | Cho phép khách hàng đánh giá chất lượng chuyến đi và tài xế |
-| **Tiền điều kiện** | Chuyến xe đã hoàn thành và khách hàng đã đăng nhập |
-| **Luồng chính** | 1. Khách hàng mở thông tin chuyến đã hoàn thành.<br>2. Chọn chức năng đánh giá tài xế.<br>3. Chọn số sao đánh giá.<br>4. Nhập nhận xét nếu muốn.<br>5. Khách hàng gửi đánh giá.<br>6. Hệ thống kiểm tra và lưu đánh giá.<br>7. Hệ thống thông báo đánh giá thành công. |
-| **Ngoại lệ** | Số sao không hợp lệ hoặc đánh giá không đúng định dạng → hệ thống yêu cầu nhập lại. |
-| **Hậu điều kiện** | Đánh giá của khách hàng được lưu vào hệ thống. |
-
----
+| Actor | Khách hàng |
+| Mục tiêu | Đánh giá chất lượng chuyến và tài xế |
+| Tiền điều kiện | Chuyến hoàn thành, đã đăng nhập |
+| Luồng chính | 1. Mở chuyến đã hoàn thành. 2. Chọn đánh giá. 3. Chọn số sao. 4. Nhập nhận xét. 5. Gửi. 6. Lưu. 7. Thông báo thành công. |
+| Ngoại lệ | Dữ liệu không hợp lệ → yêu cầu nhập lại. |
+| Hậu điều kiện | Đánh giá được lưu vào hệ thống. |
 
 ## UC13 – Quản lý hồ sơ và phương tiện
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC13 |
-| **Tên** | Quản lý hồ sơ và phương tiện |
-| **Actor** | Tài xế |
-| **Mục tiêu** | Cho phép tài xế cập nhật thông tin cá nhân và thông tin phương tiện |
-| **Tiền điều kiện** | Tài xế đã đăng nhập |
-| **Luồng chính** | 1. Tài xế mở chức năng hồ sơ và phương tiện.<br>2. Hệ thống hiển thị thông tin hiện tại.<br>3. Tài xế cập nhật thông tin cá nhân hoặc phương tiện.<br>4. Tài xế gửi thông tin cập nhật.<br>5. Hệ thống kiểm tra dữ liệu.<br>6. Hệ thống lưu thông tin mới. |
-| **Ngoại lệ** | Thông tin hoặc giấy tờ không hợp lệ → hệ thống thông báo lỗi và yêu cầu cập nhật lại. |
-| **Hậu điều kiện** | Hồ sơ hoặc thông tin phương tiện được cập nhật. |
-
----
+| Actor | Tài xế |
+| Mục tiêu | Cập nhật thông tin cá nhân và phương tiện |
+| Tiền điều kiện | Tài xế đã đăng nhập |
+| Luồng chính | 1. Mở hồ sơ. 2. Xem thông tin. 3. Cập nhật. 4. Gửi. 5. Kiểm tra. 6. Lưu. |
+| Ngoại lệ | Thông tin không hợp lệ → thông báo lỗi. |
+| Hậu điều kiện | Hồ sơ/phương tiện được cập nhật. |
 
 ## UC14 – Cập nhật vị trí
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC14 |
-| **Tên** | Cập nhật vị trí |
-| **Actor** | Tài xế, Hệ thống định vị |
-| **Mục tiêu** | Cập nhật vị trí hiện tại của tài xế để phục vụ điều phối và theo dõi chuyến |
-| **Tiền điều kiện** | Tài xế đã đăng nhập và cho phép hệ thống sử dụng vị trí |
-| **Luồng chính** | 1. Hệ thống lấy vị trí hiện tại của tài xế.<br>2. Tài xế gửi dữ liệu vị trí lên hệ thống.<br>3. Hệ thống kiểm tra dữ liệu vị trí.<br>4. Hệ thống lưu/cập nhật vị trí.<br>5. Vị trí được sử dụng cho việc tìm tài xế và theo dõi chuyến. |
-| **Ngoại lệ** | Không lấy được vị trí hoặc mất kết nối → hệ thống giữ vị trí gần nhất và thử cập nhật lại. |
-| **Hậu điều kiện** | Vị trí hiện tại hoặc vị trí gần nhất của tài xế được cập nhật trên hệ thống. |
-
----
+| Actor | Tài xế, Hệ thống định vị |
+| Mục tiêu | Cập nhật vị trí phục vụ điều phối, theo dõi |
+| Tiền điều kiện | Tài xế đã đăng nhập, cho phép dùng vị trí |
+| Luồng chính | 1. Lấy vị trí hiện tại. 2. Gửi dữ liệu. 3. Kiểm tra dữ liệu. 4. Lưu/cập nhật. 5. Sử dụng cho tìm tài xế/theo dõi. |
+| Ngoại lệ | Mất kết nối → giữ vị trí gần nhất, thử lại. |
+| Hậu điều kiện | Vị trí được cập nhật. |
 
 ## UC15 – Quản lý khách hàng
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC15 |
-| **Tên** | Quản lý khách hàng |
-| **Actor** | Nhân viên vận hành |
-| **Mục tiêu** | Quản lý thông tin và trạng thái hoạt động của khách hàng |
-| **Tiền điều kiện** | Nhân viên vận hành đã đăng nhập và có quyền quản lý khách hàng |
-| **Luồng chính** | 1. Nhân viên mở chức năng quản lý khách hàng.<br>2. Hệ thống hiển thị danh sách khách hàng.<br>3. Nhân viên tìm kiếm hoặc chọn khách hàng.<br>4. Xem thông tin chi tiết.<br>5. Nhân viên cập nhật trạng thái hoặc thông tin theo quyền hạn.<br>6. Hệ thống lưu thay đổi. |
-| **Ngoại lệ** | Không tìm thấy khách hàng → hệ thống thông báo không có dữ liệu phù hợp.<br><br>Thông tin cập nhật không hợp lệ → hệ thống yêu cầu nhập lại. |
-| **Hậu điều kiện** | Thông tin hoặc trạng thái khách hàng được cập nhật. |
-
----
+| Actor | Nhân viên vận hành |
+| Mục tiêu | Quản lý thông tin/trạng thái khách hàng |
+| Tiền điều kiện | Nhân viên có quyền quản lý khách hàng |
+| Luồng chính | 1. Mở chức năng. 2. Xem danh sách. 3. Tìm/chọn khách hàng. 4. Xem chi tiết. 5. Cập nhật theo quyền. 6. Lưu. |
+| Ngoại lệ | Không tìm thấy → thông báo. Dữ liệu không hợp lệ → nhập lại. |
+| Hậu điều kiện | Thông tin khách hàng được cập nhật. |
 
 ## UC16 – Quản lý tài xế
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC16 |
-| **Tên** | Quản lý tài xế |
-| **Actor** | Nhân viên vận hành |
-| **Mục tiêu** | Quản lý thông tin, trạng thái và hoạt động của tài xế |
-| **Tiền điều kiện** | Nhân viên vận hành đã đăng nhập và có quyền quản lý tài xế |
-| **Luồng chính** | 1. Nhân viên mở chức năng quản lý tài xế.<br>2. Hệ thống hiển thị danh sách tài xế.<br>3. Nhân viên tìm kiếm và xem thông tin tài xế.<br>4. Nhân viên cập nhật thông tin hoặc trạng thái tài xế.<br>5. Hệ thống kiểm tra dữ liệu.<br>6. Hệ thống lưu thay đổi. |
-| **Ngoại lệ** | Không tìm thấy tài xế → hệ thống thông báo không có dữ liệu.<br><br>Thông tin không hợp lệ → hệ thống yêu cầu nhập lại. |
-| **Hậu điều kiện** | Thông tin và trạng thái tài xế được cập nhật. |
-
----
+| Actor | Nhân viên vận hành |
+| Mục tiêu | Quản lý thông tin/trạng thái tài xế |
+| Tiền điều kiện | Nhân viên có quyền quản lý tài xế |
+| Luồng chính | 1. Mở chức năng. 2. Xem danh sách. 3. Tìm/xem tài xế. 4. Cập nhật. 5. Kiểm tra. 6. Lưu. |
+| Ngoại lệ | Không tìm thấy → thông báo. Dữ liệu không hợp lệ → nhập lại. |
+| Hậu điều kiện | Thông tin/trạng thái tài xế được cập nhật. |
 
 ## UC17 – Quản lý chuyến đi
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC17 |
-| **Tên** | Quản lý chuyến đi |
-| **Actor** | Nhân viên vận hành |
-| **Mục tiêu** | Theo dõi và xử lý các chuyến xe trong hệ thống |
-| **Tiền điều kiện** | Nhân viên vận hành đã đăng nhập và có quyền quản lý chuyến |
-| **Luồng chính** | 1. Nhân viên mở chức năng quản lý chuyến.<br>2. Hệ thống hiển thị danh sách chuyến.<br>3. Nhân viên tìm kiếm chuyến theo mã, khách hàng, tài xế hoặc trạng thái.<br>4. Nhân viên xem chi tiết chuyến.<br>5. Nhân viên thực hiện các thao tác xử lý khi cần.<br>6. Hệ thống cập nhật kết quả xử lý. |
-| **Ngoại lệ** | Không tìm thấy chuyến → hệ thống thông báo không có dữ liệu phù hợp.<br><br>Không thể cập nhật chuyến → hệ thống thông báo lỗi. |
-| **Hậu điều kiện** | Thông tin hoặc trạng thái chuyến được cập nhật theo thao tác của nhân viên. |
-
----
+| Actor | Nhân viên vận hành |
+| Mục tiêu | Theo dõi và xử lý các chuyến |
+| Tiền điều kiện | Nhân viên có quyền quản lý chuyến |
+| Luồng chính | 1. Mở chức năng. 2. Xem danh sách. 3. Tìm kiếm chuyến. 4. Xem chi tiết. 5. Xử lý. 6. Cập nhật kết quả. |
+| Ngoại lệ | Không tìm thấy → thông báo. Không thể cập nhật → thông báo lỗi. |
+| Hậu điều kiện | Thông tin/trạng thái chuyến được cập nhật. |
 
 ## UC18 – Xử lý sự cố
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC18 |
-| **Tên** | Xử lý sự cố |
-| **Actor** | Nhân viên vận hành |
-| **Mục tiêu** | Tiếp nhận và xử lý các sự cố phát sinh trong quá trình sử dụng dịch vụ |
-| **Tiền điều kiện** | Nhân viên vận hành đã đăng nhập và có sự cố cần xử lý |
-| **Luồng chính** | 1. Nhân viên nhận thông báo sự cố.<br>2. Nhân viên xem thông tin sự cố.<br>3. Kiểm tra thông tin khách hàng, tài xế và chuyến liên quan.<br>4. Xác định nguyên nhân và phương án xử lý.<br>5. Thực hiện xử lý sự cố.<br>6. Cập nhật kết quả xử lý.<br>7. Hệ thống lưu lịch sử xử lý. |
-| **Ngoại lệ** | Không đủ thông tin → nhân viên yêu cầu bổ sung thông tin.<br><br>Sự cố vượt quá quyền xử lý → chuyển cho cấp quản lý có thẩm quyền. |
-| **Hậu điều kiện** | Sự cố được xử lý hoặc chuyển sang bộ phận/cấp có thẩm quyền. |
-
----
+| Actor | Nhân viên vận hành |
+| Mục tiêu | Tiếp nhận, xử lý sự cố phát sinh |
+| Tiền điều kiện | Nhân viên đã đăng nhập, có sự cố cần xử lý |
+| Luồng chính | 1. Nhận thông báo sự cố. 2. Xem thông tin. 3. Kiểm tra liên quan. 4. Xác định phương án. 5. Xử lý. 6. Cập nhật kết quả. 7. Lưu lịch sử. |
+| Ngoại lệ | Thiếu thông tin → yêu cầu bổ sung. Vượt quyền → chuyển cấp quản lý. |
+| Hậu điều kiện | Sự cố được xử lý hoặc chuyển cấp có thẩm quyền. |
 
 ## UC19 – Quản lý tài khoản và phân quyền
-
 | Thành phần | Nội dung |
 |---|---|
-| **Mã UC** | UC19 |
-| **Tên** | Quản lý tài khoản và phân quyền |
-| **Actor** | Quản trị viên |
-| **Mục tiêu** | Quản lý tài khoản người dùng và quyền truy cập hệ thống |
-| **Tiền điều kiện** | Quản trị viên đã đăng nhập |
-| **Luồng chính** | 1. Quản trị viên mở chức năng quản lý tài khoản và phân quyền.<br>2. Hệ thống hiển thị danh sách tài khoản và vai trò.<br>3. Quản trị viên tìm kiếm hoặc chọn tài khoản.<br>4. Quản trị viên tạo, khóa, mở khóa hoặc cập nhật tài khoản.<br>5. Quản trị viên thiết lập vai trò/quyền truy cập.<br>6. Hệ thống kiểm tra quyền hạn.<br>7. Hệ thống lưu thay đổi. |
-| **Ngoại lệ** | Tài khoản không tồn tại → hệ thống thông báo lỗi.<br><br>Quyền phân công không hợp lệ → hệ thống từ chối thao tác và thông báo lỗi. |
-| **Hậu điều kiện** | Tài khoản và quyền truy cập được cập nhật theo yêu cầu. |
+| Actor | Quản trị viên |
+| Mục tiêu | Quản lý tài khoản và quyền truy cập |
+| Tiền điều kiện | Quản trị viên đã đăng nhập |
+| Luồng chính | 1. Mở chức năng. 2. Xem danh sách tài khoản/vai trò. 3. Tìm/chọn tài khoản. 4. Tạo/khóa/mở/cập nhật. 5. Thiết lập quyền. 6. Kiểm tra quyền hạn. 7. Lưu. |
+| Ngoại lệ | Tài khoản không tồn tại → lỗi. Phân quyền không hợp lệ → từ chối. |
+| Hậu điều kiện | Tài khoản/quyền được cập nhật. |
+
+## UC20 – Xem báo cáo
+| Thành phần | Nội dung |
+|---|---|
+| Actor | Quản trị viên |
+| Mục tiêu | Cung cấp báo cáo hoạt động hệ thống |
+| Tiền điều kiện | Quản trị viên có quyền xem báo cáo |
+| Luồng chính | 1. Mở báo cáo. 2. Chọn loại báo cáo. 3. Chọn khoảng thời gian/tiêu chí. 4. Tổng hợp dữ liệu. 5. Hiển thị. 6. Xem/xuất báo cáo. |
+| Ngoại lệ | Không có dữ liệu → thông báo. Lỗi tổng hợp → thông báo, yêu cầu thử lại. |
+| Hậu điều kiện | Báo cáo hiển thị/xuất thành công. |
 
 ---
 
-## UC20 – Xem báo cáo
+# B12. Business Rules và Ràng buộc trạng thái (🟢 MVP)
 
-| Thành phần | Nội dung |
+## 12.1. Quy tắc nghiệp vụ cốt lõi
+
+| Mã BRule | Quy tắc |
 |---|---|
-| **Mã UC** | UC20 |
-| **Tên** | Xem báo cáo |
-| **Actor** | Quản trị viên |
-| **Mục tiêu** | Cung cấp các báo cáo về hoạt động của hệ thống CAB |
-| **Tiền điều kiện** | Quản trị viên đã đăng nhập và có quyền xem báo cáo |
-| **Luồng chính** | 1. Quản trị viên mở chức năng báo cáo.<br>2. Chọn loại báo cáo cần xem.<br>3. Chọn khoảng thời gian và các tiêu chí lọc.<br>4. Hệ thống tổng hợp dữ liệu.<br>5. Hệ thống hiển thị báo cáo.<br>6. Quản trị viên xem hoặc xuất báo cáo nếu được hỗ trợ. |
-| **Ngoại lệ** | Không có dữ liệu trong khoảng thời gian đã chọn → hệ thống thông báo không có dữ liệu.<br><br>Lỗi tổng hợp dữ liệu → hệ thống thông báo và yêu cầu thực hiện lại. |
-| **Hậu điều kiện** | Báo cáo được hiển thị hoặc xuất thành công. |
+| BRule01 | Tài khoản (Customer/Driver) phải có Email/SĐT duy nhất trong hệ thống. |
+| BRule02 | Chỉ tài xế trạng thái "Sẵn sàng" mới được đưa vào danh sách tìm kiếm phân công. |
+| BRule03 | Một chuyến chỉ được gán cho duy nhất một tài xế tại một thời điểm. |
+| BRule04 | Tài xế đã từ chối một chuyến thì không được gửi lại yêu cầu cho cùng chuyến đó. |
+| BRule05 | Trạng thái chuyến phải theo đúng trình tự: Đang tìm tài xế → Đã phân công → Đang đến điểm đón → Đã đón khách → Đang di chuyển → Hoàn thành (hoặc chuyển Đã hủy/Lỗi tại bất kỳ bước nào trước hoàn thành). Không nhảy cóc trạng thái. |
+| BRule06 | Chỉ tính cước sau khi chuyến ở trạng thái "Hoàn thành". |
+| BRule07 | Không cho phép đánh giá chuyến chưa "Hoàn thành". |
+| BRule08 | Mỗi chuyến chỉ được đánh giá tối đa một lần bởi khách hàng thực hiện chuyến đó. |
+| BRule09 | Không lưu trực tiếp thông tin nhạy cảm của thẻ/tài khoản thanh toán — chỉ lưu TransactionCode. |
+| BRule10 | Giao dịch thất bại lưu trạng thái "Thất bại", cho phép thanh toán lại theo chính sách (chi tiết cần BA làm rõ — B4.12). |
+| BRule11 | Nhân viên vận hành chỉ thao tác trong phạm vi quyền hạn được cấp. |
+| BRule12 | Mọi thao tác quan trọng phải được ghi vào Audit Log. |
+| BRule13 | Mất kết nối tạm thời không tự động hủy chuyến — lưu thời điểm mất kết nối, chờ đồng bộ lại (thời gian chờ cụ thể cần BA làm rõ). |
+| BRule14 | Lỗi ở module Thanh toán/Thông báo không được làm gián đoạn luồng nghiệp vụ chính. |
 
-## B13. Acceptance Criteria (AC) – Tiêu chí chấp nhận
+## 12.2. Sơ đồ trạng thái chuyến đi (Trip State Machine)
 
-**Mục đích:** Acceptance Criteria xác định **điều kiện cụ thể để một Business Requirement (BR) được xem là hoàn thành (Done)**. Mỗi AC được viết theo cấu trúc **Given – When – Then** để đảm bảo có thể kiểm tra (testable) và không gây hiểu nhầm giữa các bên liên quan.
-
-```text
-Business Requirement (BR)
-        ↓
-Acceptance Criteria (AC)
-        ↓
-Điều kiện xác nhận BR đã hoàn thành (Definition of Done)
+```mermaid
+stateDiagram-v2
+    [*] --> DangTimTaiXe: Khách hàng tạo yêu cầu
+    DangTimTaiXe --> DaPhanCong: Tài xế chấp nhận
+    DangTimTaiXe --> KhongTimDuocTaiXe: Hết tài xế phù hợp
+    DangTimTaiXe --> DaHuy: Khách hàng hủy
+    DaPhanCong --> DangDenDiemDon: Tài xế di chuyển
+    DangDenDiemDon --> DaDonKhach: Tài xế đến & đón khách
+    DaDonKhach --> DangDiChuyen: Bắt đầu di chuyển đến điểm đến
+    DangDiChuyen --> HoanThanh: Đến điểm đến
+    DaPhanCong --> DaHuy: Khách hàng/Tài xế hủy
+    DangDenDiemDon --> DaHuy: Khách hàng/Tài xế hủy
+    HoanThanh --> [*]
+    DaHuy --> [*]
+    KhongTimDuocTaiXe --> [*]
 ```
 
-### Bảng Acceptance Criteria theo từng Business Requirement
+---
+
+# B13. Acceptance Criteria (AC) — 🟢 toàn bộ thuộc MVP
+
+**Mục đích:** Xác định điều kiện cụ thể để một BR được xem là hoàn thành (Done), theo cấu trúc **Given – When – Then**.
+
+```text
+Business Requirement (BR) → Acceptance Criteria (AC) → Definition of Done
+```
 
 | Mã BR | Business Requirement | Mã AC | Acceptance Criteria (Given – When – Then) |
 |---|---|---|---|
-| BR01 | Quản lý tài khoản khách hàng | AC01 | **Given** khách hàng chưa có tài khoản, **When** nhập đầy đủ thông tin hợp lệ và đăng ký, **Then** hệ thống tạo tài khoản thành công và khách hàng có thể đăng nhập. BR được xem là hoàn thành khi khách hàng đăng ký, đăng nhập, sửa thông tin cá nhân đều hoạt động đúng và dữ liệu trùng lặp (email/SĐT) bị từ chối. |
-| BR02 | Quản lý tài khoản tài xế | AC02 | **Given** tài xế được tạo tài khoản (tự đăng ký hoặc do nhân viên tạo), **When** tài xế đăng nhập, **Then** hệ thống hiển thị đúng hồ sơ và cho phép cập nhật thông tin. Hoàn thành khi tài khoản tài xế có thể được tạo, đăng nhập và chỉnh sửa hồ sơ mà không phát sinh lỗi dữ liệu. |
-| BR03 | Quản lý phương tiện | AC03 | **Given** tài xế/nhân viên vận hành có quyền, **When** thêm/sửa thông tin phương tiện, **Then** hệ thống lưu và hiển thị đúng thông tin phương tiện gắn với tài xế. Hoàn thành khi CRUD phương tiện hoạt động và mỗi phương tiện được liên kết đúng với tài xế sở hữu. |
-| BR04 | Quản lý quyền truy cập | AC04 | **Given** nhân viên/quản trị viên có vai trò xác định, **When** truy cập chức năng quản trị, **Then** hệ thống chỉ cho phép thao tác đúng theo quyền được cấp. Hoàn thành khi thử truy cập chức năng ngoài quyền hạn bị từ chối 100%. |
-| BR05 | Quản lý trạng thái tài xế | AC05 | **Given** tài xế đã đăng nhập, **When** chuyển trạng thái (sẵn sàng/không sẵn sàng), **Then** hệ thống cập nhật trạng thái ngay lập tức và chỉ tài xế "sẵn sàng" mới được đưa vào danh sách tìm kiếm. |
-| BR06 | Theo dõi vị trí tài xế | AC06 | **Given** tài xế đang hoạt động, **When** vị trí thay đổi, **Then** hệ thống cập nhật vị trí mới nhất và vị trí này được sử dụng cho việc tìm tài xế/ETA. Hoàn thành khi vị trí hiển thị đúng và không trễ quá mức quy định (cần xác nhận thêm với khách hàng). |
-| BR07 | Tạo yêu cầu đặt xe | AC07 | **Given** khách hàng đã đăng nhập, **When** nhập điểm đón, điểm đến, loại xe và xác nhận, **Then** hệ thống tạo yêu cầu đặt xe với trạng thái "Đang tìm tài xế". Hoàn thành khi yêu cầu thiếu dữ liệu bắt buộc luôn bị chặn trước khi gửi. |
-| BR08 | Tiếp nhận yêu cầu đặt xe | AC08 | **Given** yêu cầu đặt xe hợp lệ được gửi, **When** hệ thống nhận yêu cầu, **Then** yêu cầu được lưu và trạng thái ban đầu được thiết lập đúng, đồng thời chuyển sang quy trình tìm tài xế (BP02). |
-| BR09 | Tự động tìm tài xế | AC09 | **Given** có yêu cầu đặt xe đang chờ, **When** hệ thống tìm kiếm, **Then** danh sách tài xế trả về chỉ gồm tài xế đang "sẵn sàng" và phù hợp loại xe. Hoàn thành khi không có tài xế "bận"/"offline" nào lọt vào danh sách đề xuất. |
-| BR10 | Ưu tiên tài xế phù hợp | AC10 | **Given** có nhiều tài xế phù hợp, **When** hệ thống xếp hạng, **Then** tài xế gần khách hàng nhất và đáp ứng tiêu chí vận hành được ưu tiên gửi yêu cầu trước. |
-| BR11 | Xử lý tài xế từ chối/không phản hồi | AC11 | **Given** tài xế được đề xuất từ chối hoặc không phản hồi trong thời gian quy định, **When** hết thời gian chờ, **Then** hệ thống tự động chuyển sang tài xế tiếp theo mà không yêu cầu khách hàng tạo lại yêu cầu, và không gửi lại cho tài xế đã từ chối cùng chuyến. |
-| BR12 | Thông báo không tìm được tài xế | AC12 | **Given** không còn tài xế phù hợp sau khi đã thử hết danh sách/số lần quy định, **When** hệ thống xác nhận không tìm được, **Then** khách hàng nhận được thông báo rõ ràng và trạng thái yêu cầu chuyển thành "Không tìm được tài xế" (không treo vô thời hạn). |
-| BR13 | Phân công tài xế | AC13 | **Given** tài xế chấp nhận chuyến, **When** hệ thống xác nhận, **Then** chuyến được gán chính thức cho tài xế đó, các tài xế khác không còn nhận được yêu cầu cho chuyến này. |
-| BR14 | Quản lý trạng thái chuyến đi | AC14 | **Given** chuyến đang được thực hiện, **When** có sự kiện thay đổi (đến điểm đón, đón khách, di chuyển, hoàn thành, hủy), **Then** trạng thái chuyến được cập nhật đúng thứ tự và không cho phép nhảy cóc trạng thái không hợp lệ. |
-| BR15 | Theo dõi chuyến đi | AC15 | **Given** chuyến đã có tài xế, **When** khách hàng mở màn hình theo dõi, **Then** hệ thống hiển thị đúng trạng thái và thông tin chuyến hiện tại theo thời gian thực (near real-time). |
-| BR16 | Theo dõi thời gian dự kiến | AC16 | **Given** tài xế đang di chuyển đến điểm đón, **When** vị trí tài xế cập nhật, **Then** hệ thống hiển thị thời gian dự kiến đến (ETA) cho khách hàng. |
-| BR17 | Xử lý chuyến bị hủy hoặc lỗi | AC17 | **Given** khách hàng/tài xế hủy chuyến hoặc chuyến gặp lỗi, **When** yêu cầu hủy/lỗi được ghi nhận, **Then** hệ thống cập nhật trạng thái "Đã hủy"/"Lỗi", lưu lý do và thông báo cho bên liên quan. (Chính sách hủy/phí hủy cần BA làm rõ thêm.) |
-| BR18 | Lưu lịch sử chuyến đi | AC18 | **Given** chuyến đã hoàn thành hoặc bị hủy, **When** hệ thống lưu dữ liệu, **Then** khách hàng và nhân viên vận hành có thể tra cứu lại đầy đủ thông tin chuyến trong lịch sử. |
-| BR19 | Tính cước chuyến đi | AC19 | **Given** chuyến đã hoàn thành, **When** hệ thống tính cước, **Then** số tiền hiển thị chính xác theo loại dịch vụ và thông tin chuyến, được lưu lại trước khi chuyển sang bước thanh toán. |
-| BR20 | Thanh toán tiền mặt | AC20 | **Given** khách hàng chọn thanh toán tiền mặt, **When** giao dịch được xác nhận, **Then** hệ thống ghi nhận trạng thái thanh toán thành công và lưu vào lịch sử giao dịch. |
-| BR21 | Thanh toán điện tử | AC21 | **Given** khách hàng chọn thanh toán điện tử, **When** hệ thống gửi yêu cầu đến Payment Provider, **Then** kết quả giao dịch (thành công/thất bại) được nhận và xử lý đúng theo phản hồi từ nhà cung cấp. |
-| BR22 | Quản lý kết quả thanh toán | AC22 | **Given** giao dịch thanh toán đã hoàn tất (thành công hoặc thất bại), **When** hệ thống nhận kết quả, **Then** trạng thái giao dịch được cập nhật chính xác và không bị trùng lặp bản ghi. |
-| BR23 | Xử lý thanh toán thất bại | AC23 | **Given** giao dịch thanh toán điện tử thất bại, **When** hệ thống ghi nhận lỗi, **Then** khách hàng được thông báo và có tùy chọn thanh toán lại theo chính sách doanh nghiệp. |
-| BR24 | Bảo vệ thông tin thanh toán | AC24 | **Given** khách hàng thực hiện thanh toán điện tử, **When** dữ liệu thẻ/tài khoản được xử lý, **Then** hệ thống CAB không lưu trữ trực tiếp thông tin nhạy cảm này (chỉ lưu token/mã giao dịch từ Payment Provider). |
-| BR25 | Quản lý lịch sử giao dịch | AC25 | **Given** giao dịch đã phát sinh, **When** nhân viên vận hành tra cứu, **Then** hệ thống hiển thị đầy đủ, chính xác lịch sử giao dịch theo chuyến/khách hàng. |
-| BR26 | Thông báo trạng thái đặt xe | AC26 | **Given** có sự kiện quan trọng của chuyến (tiếp nhận, tài xế nhận chuyến, tài xế đến, hoàn thành, kết quả thanh toán), **When** sự kiện xảy ra, **Then** khách hàng nhận được thông báo tương ứng. |
-| BR27 | Thông báo cho tài xế | AC27 | **Given** có chuyến mới hoặc thay đổi liên quan đến chuyến đang thực hiện, **When** sự kiện xảy ra, **Then** tài xế nhận được thông báo kịp thời. |
-| BR28 | Mở rộng kênh thông báo | AC28 | **Given** doanh nghiệp muốn thêm kênh thông báo mới (SMS, Push, Email...), **When** tích hợp kênh mới, **Then** hệ thống thêm được mà không cần sửa đổi logic nghiệp vụ hiện có (kiến trúc tách rời notification). |
-| BR29 | Đánh giá tài xế | AC29 | **Given** chuyến đã hoàn thành, **When** khách hàng gửi đánh giá hợp lệ (điểm số, nhận xét), **Then** hệ thống lưu đánh giá và không cho phép đánh giá chuyến chưa hoàn thành. |
-| BR30 | Quản lý phản hồi | AC30 | **Given** đánh giá đã được gửi, **When** hệ thống xử lý, **Then** dữ liệu đánh giá được lưu và liên kết đúng với tài xế để phục vụ theo dõi chất lượng. |
-| BR31 | Quản lý khách hàng | AC31 | **Given** nhân viên vận hành có quyền, **When** tìm kiếm/xem/cập nhật thông tin khách hàng, **Then** thao tác thực hiện đúng và chỉ trong phạm vi quyền hạn được cấp. |
-| BR32 | Quản lý tài xế và phương tiện | AC32 | **Given** nhân viên vận hành có quyền, **When** quản lý hồ sơ tài xế/phương tiện, **Then** dữ liệu được cập nhật chính xác và phản ánh đúng trên các module liên quan (tìm tài xế, chuyến đi). |
-| BR33 | Theo dõi chuyến đang diễn ra | AC33 | **Given** có chuyến đang thực hiện, **When** nhân viên vận hành mở màn hình giám sát, **Then** danh sách và trạng thái các chuyến hiển thị đúng thời gian thực. |
-| BR34 | Hỗ trợ xử lý sự cố | AC34 | **Given** chuyến gặp sự cố, **When** nhân viên vận hành can thiệp, **Then** nhân viên có thể xem chi tiết, thực hiện xử lý và hệ thống lưu lại lịch sử xử lý sự cố. |
-| BR35 | Báo cáo hoạt động | AC35 | **Given** cần xem báo cáo trong khoảng thời gian xác định, **When** yêu cầu báo cáo, **Then** hệ thống hiển thị đúng số lượng chuyến, doanh thu, tỷ lệ hoàn thành và tỷ lệ hủy khớp với dữ liệu gốc. |
-| BR36 | Báo cáo hiệu quả tài xế | AC36 | **Given** dữ liệu chuyến và đánh giá đã có, **When** xem báo cáo hiệu quả tài xế, **Then** hệ thống tổng hợp đúng số liệu (số chuyến, đánh giá trung bình, tỷ lệ hủy...) theo từng tài xế. |
-| BR37 | Xác thực người dùng | AC37 | **Given** người dùng chưa đăng nhập, **When** cố truy cập chức năng yêu cầu tài khoản, **Then** hệ thống từ chối và yêu cầu đăng nhập. Hoàn thành khi 100% chức năng cần xác thực đều bị chặn nếu chưa đăng nhập. |
-| BR38 | Kiểm soát quyền truy cập | AC38 | **Given** người dùng đã đăng nhập với vai trò xác định, **When** thực hiện thao tác ngoài quyền hạn, **Then** hệ thống từ chối thao tác và ghi log. |
-| BR39 | Bảo vệ dữ liệu | AC39 | **Given** dữ liệu cá nhân/phương tiện/vị trí/giao dịch tồn tại trong hệ thống, **When** có truy cập trái phép, **Then** hệ thống ngăn chặn và không để lộ dữ liệu ra ngoài phạm vi quyền hạn. |
-| BR40 | Lưu vết thao tác | AC40 | **Given** người dùng thực hiện thao tác quan trọng (tạo/sửa/xóa dữ liệu nhạy cảm), **When** thao tác hoàn tất, **Then** hệ thống ghi log đầy đủ (ai, làm gì, khi nào) và log không thể chỉnh sửa/xóa bởi người dùng thường. |
-| BR41 | Đảm bảo khả năng mở rộng | AC41 | **Given** số lượng khách hàng/tài xế/chuyến tăng cao, **When** hệ thống chịu tải, **Then** các thành phần có thể mở rộng độc lập mà không cần thiết kế lại kiến trúc tổng thể (đánh giá qua kiến trúc, không phải test tải trong MVP). |
-| BR42 | Đảm bảo tính độc lập của các thành phần | AC42 | **Given** module thanh toán hoặc thông báo gặp lỗi/timeout, **When** lỗi xảy ra, **Then** luồng đặt xe/chuyến đi chính vẫn hoạt động bình thường, không bị dừng theo. |
-| BR43 | Hỗ trợ triển khai từng phần | AC43 | **Given** cần cập nhật một chức năng, **When** triển khai, **Then** chỉ chức năng đó bị ảnh hưởng, các chức năng khác đang hoạt động không bị gián đoạn (đánh giá qua thiết kế kiến trúc modular). |
-| BR44 | Hỗ trợ mở rộng dịch vụ | AC44 | **Given** doanh nghiệp muốn thêm loại dịch vụ/loại xe mới, **When** bổ sung, **Then** hệ thống cho phép thêm mà không cần sửa lại toàn bộ luồng đặt xe hiện có. |
-| BR45 | Hỗ trợ mở rộng phương thức thanh toán | AC45 | **Given** doanh nghiệp muốn tích hợp thêm phương thức/nhà cung cấp thanh toán, **When** tích hợp, **Then** hệ thống thêm được mà không phải viết lại toàn bộ module thanh toán hiện tại. |
-| BR46 | Hỗ trợ mở rộng nhà cung cấp thông báo | AC46 | **Given** doanh nghiệp muốn đổi/thêm nhà cung cấp thông báo, **When** cấu hình lại, **Then** các luồng gửi thông báo hiện có (BR26, BR27) không bị ảnh hưởng. |
+| BR01 | Quản lý tài khoản khách hàng | AC01 | **Given** khách hàng chưa có tài khoản, **When** nhập đầy đủ thông tin hợp lệ và đăng ký, **Then** hệ thống tạo tài khoản thành công. Hoàn thành khi đăng ký/đăng nhập/sửa thông tin hoạt động đúng và dữ liệu trùng lặp bị từ chối. |
+| BR02 | Quản lý tài khoản tài xế | AC02 | **Given** tài xế được tạo tài khoản, **When** đăng nhập, **Then** hệ thống hiển thị đúng hồ sơ và cho phép cập nhật. |
+| BR03 | Quản lý phương tiện | AC03 | **Given** người có quyền, **When** thêm/sửa phương tiện, **Then** hệ thống lưu và liên kết đúng với tài xế sở hữu. |
+| BR04 | Quản lý quyền truy cập | AC04 | **Given** nhân viên/quản trị viên có vai trò xác định, **When** truy cập chức năng quản trị, **Then** chỉ cho phép thao tác đúng quyền được cấp. |
+| BR05 | Quản lý trạng thái tài xế | AC05 | **Given** tài xế đã đăng nhập, **When** chuyển trạng thái, **Then** cập nhật ngay và chỉ tài xế "sẵn sàng" được tìm kiếm. |
+| BR06 | Theo dõi vị trí tài xế | AC06 | **Given** tài xế đang hoạt động, **When** vị trí thay đổi, **Then** hệ thống cập nhật và dùng cho tìm tài xế/ETA. |
+| BR07 | Tạo yêu cầu đặt xe | AC07 | **Given** khách hàng đã đăng nhập, **When** nhập đủ thông tin và xác nhận, **Then** tạo yêu cầu với trạng thái "Đang tìm tài xế". |
+| BR08 | Tiếp nhận yêu cầu đặt xe | AC08 | **Given** yêu cầu hợp lệ, **When** hệ thống nhận, **Then** lưu và chuyển sang tìm tài xế (BP02). |
+| BR09 | Tự động tìm tài xế | AC09 | **Given** yêu cầu đang chờ, **When** tìm kiếm, **Then** danh sách chỉ gồm tài xế "sẵn sàng" phù hợp loại xe. |
+| BR10 | Ưu tiên tài xế phù hợp | AC10 | **Given** nhiều tài xế phù hợp, **When** xếp hạng, **Then** tài xế gần nhất/đúng tiêu chí được ưu tiên gửi trước. |
+| BR11 | Xử lý tài xế từ chối/không phản hồi | AC11 | **Given** tài xế từ chối/không phản hồi đúng hạn, **When** hết thời gian chờ, **Then** tự động chuyển tài xế khác, không gửi lại cho tài xế đã từ chối. |
+| BR12 | Thông báo không tìm được tài xế | AC12 | **Given** hết danh sách tài xế phù hợp, **When** xác nhận không tìm được, **Then** thông báo khách hàng, không treo trạng thái vô hạn. |
+| BR13 | Phân công tài xế | AC13 | **Given** tài xế chấp nhận, **When** hệ thống xác nhận, **Then** gán chính thức, tài xế khác không nhận yêu cầu cho chuyến này nữa. |
+| BR14 | Quản lý trạng thái chuyến đi | AC14 | **Given** chuyến đang thực hiện, **When** có sự kiện thay đổi, **Then** cập nhật đúng thứ tự theo B12.2, không nhảy cóc. |
+| BR15 | Theo dõi chuyến đi | AC15 | **Given** chuyến đã có tài xế, **When** khách hàng mở theo dõi, **Then** hiển thị đúng trạng thái/thông tin thời gian thực. |
+| BR16 | Theo dõi thời gian dự kiến | AC16 | **Given** tài xế đang di chuyển đến điểm đón, **When** vị trí cập nhật, **Then** hiển thị ETA cho khách hàng. |
+| BR17 | Xử lý chuyến bị hủy hoặc lỗi | AC17 | **Given** hủy/lỗi được ghi nhận, **When** xử lý, **Then** cập nhật trạng thái, lưu lý do, thông báo bên liên quan. |
+| BR18 | Lưu lịch sử chuyến đi | AC18 | **Given** chuyến hoàn thành/hủy, **When** hệ thống lưu, **Then** tra cứu lại đầy đủ trong lịch sử. |
+| BR19 | Tính cước chuyến đi | AC19 | **Given** chuyến hoàn thành, **When** tính cước, **Then** số tiền chính xác, lưu trước khi sang thanh toán. |
+| BR20 | Thanh toán tiền mặt | AC20 | **Given** chọn tiền mặt, **When** xác nhận, **Then** ghi nhận thành công, lưu lịch sử giao dịch. |
+| BR21 | Thanh toán điện tử | AC21 | **Given** chọn điện tử, **When** gửi Payment Provider, **Then** kết quả được nhận và xử lý đúng. |
+| BR22 | Quản lý kết quả thanh toán | AC22 | **Given** giao dịch hoàn tất, **When** nhận kết quả, **Then** cập nhật chính xác, không trùng bản ghi. |
+| BR23 | Xử lý thanh toán thất bại | AC23 | **Given** giao dịch điện tử thất bại, **When** ghi nhận lỗi, **Then** thông báo và cho thanh toán lại theo chính sách. |
+| BR24 | Bảo vệ thông tin thanh toán | AC24 | **Given** thanh toán điện tử, **When** xử lý dữ liệu thẻ, **Then** không lưu trực tiếp thông tin nhạy cảm. |
+| BR25 | Quản lý lịch sử giao dịch | AC25 | **Given** giao dịch phát sinh, **When** nhân viên tra cứu, **Then** hiển thị đầy đủ, chính xác. |
+| BR26 | Thông báo trạng thái đặt xe | AC26 | **Given** sự kiện quan trọng của chuyến, **When** xảy ra, **Then** khách hàng nhận thông báo tương ứng. |
+| BR27 | Thông báo cho tài xế | AC27 | **Given** chuyến mới/thay đổi, **When** xảy ra, **Then** tài xế nhận thông báo kịp thời. |
+| BR28 | Mở rộng kênh thông báo | AC28 | **Given** cần thêm kênh mới, **When** tích hợp, **Then** thêm được mà không sửa logic hiện có. *(🔵 kiểm chứng bằng thiết kế, không phải chức năng chạy thử trong MVP)* |
+| BR29 | Đánh giá tài xế | AC29 | **Given** chuyến hoàn thành, **When** gửi đánh giá hợp lệ, **Then** lưu đánh giá, không cho đánh giá chuyến chưa hoàn thành. |
+| BR30 | Quản lý phản hồi | AC30 | **Given** đánh giá đã gửi, **When** xử lý, **Then** lưu và liên kết đúng với tài xế. |
+| BR31 | Quản lý khách hàng | AC31 | **Given** nhân viên có quyền, **When** thao tác trên khách hàng, **Then** đúng và trong phạm vi quyền hạn. |
+| BR32 | Quản lý tài xế và phương tiện | AC32 | **Given** nhân viên có quyền, **When** quản lý hồ sơ tài xế/phương tiện, **Then** dữ liệu cập nhật chính xác, phản ánh đúng module liên quan. |
+| BR33 | Theo dõi chuyến đang diễn ra | AC33 | **Given** chuyến đang thực hiện, **When** mở giám sát, **Then** hiển thị đúng thời gian thực. |
+| BR34 | Hỗ trợ xử lý sự cố | AC34 | **Given** chuyến gặp sự cố, **When** nhân viên can thiệp, **Then** xử lý và lưu lịch sử xử lý. |
+| BR35 | Báo cáo hoạt động | AC35 | **Given** khoảng thời gian xác định, **When** yêu cầu báo cáo, **Then** hiển thị đúng số liệu khớp dữ liệu gốc. |
+| BR36 | Báo cáo hiệu quả tài xế | AC36 | **Given** dữ liệu chuyến/đánh giá đã có, **When** xem báo cáo, **Then** tổng hợp đúng theo từng tài xế. |
+| BR37 | Xác thực người dùng | AC37 | **Given** chưa đăng nhập, **When** cố truy cập chức năng cần tài khoản, **Then** từ chối và yêu cầu đăng nhập. |
+| BR38 | Kiểm soát quyền truy cập | AC38 | **Given** đã đăng nhập với vai trò xác định, **When** thao tác ngoài quyền, **Then** từ chối và ghi log. |
+| BR39 | Bảo vệ dữ liệu | AC39 | **Given** dữ liệu nhạy cảm tồn tại, **When** có truy cập trái phép, **Then** ngăn chặn, không để lộ ngoài phạm vi quyền hạn. |
+| BR40 | Lưu vết thao tác | AC40 | **Given** thao tác quan trọng, **When** hoàn tất, **Then** ghi log đầy đủ, không thể sửa/xóa bởi user thường. |
+| BR41 | Đảm bảo khả năng mở rộng | AC41 | **Given** tải tăng cao, **When** hệ thống chịu tải, **Then** thành phần mở rộng độc lập mà không thiết kế lại kiến trúc. *(🔵 đánh giá qua thiết kế, không test tải trong MVP)* |
+| BR42 | Đảm bảo tính độc lập của các thành phần | AC42 | **Given** module thanh toán/thông báo lỗi/timeout, **When** lỗi xảy ra, **Then** luồng đặt xe chính vẫn hoạt động bình thường. |
+| BR43 | Hỗ trợ triển khai từng phần | AC43 | **Given** cần cập nhật một chức năng, **When** triển khai, **Then** chỉ chức năng đó bị ảnh hưởng. *(🔵 đánh giá qua kiến trúc modular)* |
+| BR44 | Hỗ trợ mở rộng dịch vụ | AC44 | **Given** cần thêm loại dịch vụ/loại xe, **When** bổ sung, **Then** thêm được mà không sửa lại toàn bộ luồng đặt xe. |
+| BR45 | Hỗ trợ mở rộng phương thức thanh toán | AC45 | **Given** cần thêm phương thức/nhà cung cấp, **When** tích hợp, **Then** thêm được mà không viết lại toàn bộ module thanh toán. |
+| BR46 | Hỗ trợ mở rộng nhà cung cấp thông báo | AC46 | **Given** cần đổi/thêm nhà cung cấp thông báo, **When** cấu hình lại, **Then** luồng thông báo hiện có (BR26, BR27) không bị ảnh hưởng. |
 
-### Nguyên tắc chung xác định "BR hoàn thành" (Definition of Done ở cấp Business Requirement)
+### Nguyên tắc chung xác định "BR hoàn thành" (Definition of Done)
 
-Một Business Requirement được xem là **hoàn thành (Done)** khi đáp ứng đủ các điều kiện sau:
+1. Toàn bộ AC liên quan đạt (Pass) ở cả luồng chính lẫn ngoại lệ.
+2. Chức năng hoạt động đúng theo Use Case ở B11.
+3. Dữ liệu lưu trữ chính xác, nhất quán theo B9.
+4. Không vi phạm Business Rules (B12) và NFR liên quan (B10).
+5. Với BR liên quan nội dung **chưa chốt chính sách**, chỉ Done khi có xác nhận chính thức từ khách hàng — nếu chưa, ở trạng thái "Blocked – chờ làm rõ".
+6. Với BR/NFR gắn nhãn 🔵 [Định hướng kiến trúc], "Done" chỉ yêu cầu **thiết kế đáp ứng nguyên tắc** (ví dụ: code có tách module, không hard-code phụ thuộc cứng) — **không** yêu cầu triển khai đầy đủ hạ tầng (auto-scaling, multi-provider, CI/CD nâng cao...) trong 7 tuần.
 
-1. Toàn bộ Acceptance Criteria (AC) liên quan đến BR đó **đạt (Pass)** khi kiểm thử theo luồng chính lẫn các trường hợp ngoại lệ đã liệt kê.
-2. Chức năng liên quan hoạt động đúng với các **Use Case** đã đặc tả ở B11 (không có luồng nào bị chặn hoặc lỗi ngoài dự kiến).
-3. Dữ liệu liên quan được lưu trữ chính xác, nhất quán theo mô hình dữ liệu ở B9.
-4. Không vi phạm các **Non-Functional Requirement** liên quan (bảo mật, phân quyền, audit log — B10).
-5. Đối với các BR liên quan đến nội dung **chưa chốt chính sách** (VD: BR11, BR17, BR23...), BR chỉ được coi là hoàn thành khi đã có xác nhận chính thức từ khách hàng về chính sách và hệ thống triển khai đúng theo chính sách đó — nếu chưa có xác nhận, BR ở trạng thái "Blocked – chờ làm rõ", không được đánh giá là Done.
+---
 
-## B14. MA TRẬN TRUY XUẤT YÊU CẦU (RTM – Requirements Traceability Matrix)
-
-**Mục đích:** RTM giúp truy xuất nguồn gốc và mối liên hệ xuyên suốt giữa **Mục tiêu kinh doanh (BG) → Yêu cầu nghiệp vụ (BR) → Yêu cầu chức năng (FR) → Use Case (UC) → Tiêu chí chấp nhận (AC)**, đảm bảo mọi yêu cầu đều được thiết kế, xây dựng và kiểm thử đầy đủ, không bị bỏ sót hoặc dư thừa.
+# B14. MA TRẬN TRUY XUẤT YÊU CẦU (RTM)
 
 ```text
-BG (Business Goal)
-   ↓
-BR (Business Requirement)
-   ↓
-FR (Functional Requirement)
-   ↓
-UC (Use Case)
-   ↓
-AC (Acceptance Criteria)
+BG (Business Goal – theo B3) → BR → FR → UC → AC
 ```
-
-### Bảng RTM
 
 | BG | BR | FR | UC | AC |
 |---|---|---|---|---|
@@ -1366,7 +1323,7 @@ AC (Acceptance Criteria)
 | BG05 – Quản lý tính cước và thanh toán | BR24 – Bảo vệ thông tin thanh toán | FR08 | UC10 | AC24 |
 | BG06 – Xây dựng hệ thống thông báo | BR26 – Thông báo trạng thái đặt xe | FR09 | UC04, UC08 | AC26 |
 | BG06 – Xây dựng hệ thống thông báo | BR27 – Thông báo cho tài xế | FR09 | UC06, UC07 | AC27 |
-| BG06 – Xây dựng hệ thống thông báo | BR28 – Mở rộng kênh thông báo | FR09 | – (kiến trúc, không có UC trực tiếp) | AC28 |
+| BG06 – Xây dựng hệ thống thông báo | BR28 – Mở rộng kênh thông báo 🔵 | FR09 | – (kiến trúc, không có UC trực tiếp) | AC28 |
 | BG07 – Quản lý và khai thác dữ liệu | BR18 – Lưu lịch sử chuyến đi | FR14 | UC11 | AC18 |
 | BG07 – Quản lý và khai thác dữ liệu | BR25 – Quản lý lịch sử giao dịch | FR14 | UC17 | AC25 |
 | BG07 – Quản lý và khai thác dữ liệu | BR40 – Lưu vết thao tác | FR13 | UC19 | AC40 |
@@ -1377,17 +1334,18 @@ AC (Acceptance Criteria)
 | BG09 – Đảm bảo bảo mật và phân quyền | BR38 – Kiểm soát quyền truy cập | FR13 | UC19 | AC38 |
 | BG09 – Đảm bảo bảo mật và phân quyền | BR39 – Bảo vệ dữ liệu | FR13 | UC19 | AC39 |
 | BG09 – Đảm bảo bảo mật và phân quyền | BR40 – Lưu vết thao tác | FR13 | UC19 | AC40 |
-| BG10 – Đảm bảo tính ổn định và khả năng mở rộng | BR41 – Đảm bảo khả năng mở rộng | FR11 | – (kiến trúc, không có UC trực tiếp) | AC41 |
-| BG10 – Đảm bảo tính ổn định và khả năng mở rộng | BR42 – Đảm bảo tính độc lập của các thành phần | FR09 | – (kiến trúc, không có UC trực tiếp) | AC42 |
-| BG10 – Đảm bảo tính ổn định và khả năng mở rộng | BR43 – Hỗ trợ triển khai từng phần | FR11 | – (kiến trúc, không có UC trực tiếp) | AC43 |
-| BG11 – Hỗ trợ phát triển hệ thống trong tương lai | BR44 – Hỗ trợ mở rộng dịch vụ | FR02 | UC04 | AC44 |
-| BG11 – Hỗ trợ phát triển hệ thống trong tương lai | BR45 – Hỗ trợ mở rộng phương thức thanh toán | FR08 | UC10 | AC45 |
-| BG11 – Hỗ trợ phát triển hệ thống trong tương lai | BR46 – Hỗ trợ mở rộng nhà cung cấp thông báo | FR09 | – (kiến trúc, không có UC trực tiếp) | AC46 |
+| BG10 – Đảm bảo tính ổn định và khả năng mở rộng 🔵 | BR41 – Đảm bảo khả năng mở rộng | FR11 | – (kiến trúc) | AC41 |
+| BG10 – Đảm bảo tính ổn định và khả năng mở rộng 🔵 | BR42 – Đảm bảo tính độc lập của các thành phần | FR09 | – (kiến trúc) | AC42 |
+| BG10 – Đảm bảo tính ổn định và khả năng mở rộng 🔵 | BR43 – Hỗ trợ triển khai từng phần | FR11 | – (kiến trúc) | AC43 |
+| BG11 – Hỗ trợ phát triển hệ thống trong tương lai 🔵 | BR44 – Hỗ trợ mở rộng dịch vụ | FR02 | UC04 | AC44 |
+| BG11 – Hỗ trợ phát triển hệ thống trong tương lai 🔵 | BR45 – Hỗ trợ mở rộng phương thức thanh toán | FR08 | UC10 | AC45 |
+| BG11 – Hỗ trợ phát triển hệ thống trong tương lai 🔵 | BR46 – Hỗ trợ mở rộng nhà cung cấp thông báo | FR09 | – (kiến trúc) | AC46 |
 | BG12 – Hoàn thành MVP trong 7 tuần | (Xuyên suốt toàn bộ BR01–BR46 thuộc phạm vi MVP) | Tất cả FR01–FR14 | Tất cả UC01–UC20 | Tất cả AC01–AC46 |
 
 ### Ghi chú về ma trận RTM
 
-- **Các dòng có UC = "– (kiến trúc, không có UC trực tiếp)"**: đây là các Business Requirement thuộc nhóm **phi chức năng / kiến trúc hệ thống** (khả năng mở rộng, tính độc lập thành phần, mở rộng kênh thông báo...), không gắn với một thao tác cụ thể của người dùng nên không có Use Case tương ứng. Các yêu cầu này được kiểm chứng thông qua thiết kế kiến trúc và NFR (B10), không qua kịch bản Use Case.
-- **BR18, BR40** xuất hiện ở hai BG khác nhau (BG03/BG07 và BG07/BG09) vì các yêu cầu này phục vụ đồng thời nhiều mục tiêu kinh doanh (trải nghiệm khách hàng, khai thác dữ liệu, bảo mật).
-- **BG12 (Hoàn thành MVP trong 7 tuần)** là mục tiêu bao trùm toàn bộ dự án, không gắn riêng với một BR cụ thể mà là điều kiện ràng buộc về phạm vi và thời gian cho toàn bộ các BR còn lại.
-- Ma trận này cần được **cập nhật liên tục** trong suốt vòng đời dự án khi có thay đổi yêu cầu, bổ sung Use Case mới, hoặc điều chỉnh Acceptance Criteria sau khi làm rõ với khách hàng (xem mục "Các vấn đề chưa đủ thông tin" ở B4.12).
+- Các dòng UC = "– (kiến trúc)" thuộc nhóm phi chức năng/kiến trúc, không gắn thao tác người dùng cụ thể — kiểm chứng qua thiết kế và NFR/Business Rules, không qua kịch bản Use Case.
+- BR18, BR40 xuất hiện ở nhiều BG vì phục vụ đồng thời nhiều mục tiêu kinh doanh.
+- BG12 là mục tiêu bao trùm toàn dự án — ràng buộc phạm vi/thời gian cho toàn bộ BR còn lại.
+- **BG10, BG11 và các BR/NFR gắn nhãn 🔵** là nhóm "Định hướng kiến trúc" — bắt buộc phải **thiết kế đúng nguyên tắc** ngay từ đầu (để không phải viết lại hệ thống sau này), nhưng **không phải hạng mục chức năng phải hoàn thiện đầy đủ** trong 7 tuần MVP.
+- Ma trận cần được cập nhật liên tục khi có thay đổi yêu cầu hoặc làm rõ chính sách với khách hàng (xem B4.12). thông tin" ở B4.12).
