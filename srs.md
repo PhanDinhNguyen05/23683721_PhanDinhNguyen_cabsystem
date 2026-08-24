@@ -274,8 +274,6 @@ Hệ thống giúp **giảm thời gian xử lý, nâng cao chất lượng dị
 
 # B5. Chuyển đổi yêu cầu thành Business Requirements (BR)
 
-> Nhãn 🟢/🔵 đánh dấu BR nào là deliverable bắt buộc của MVP và BR nào là nguyên tắc thiết kế dài hạn.
-
 | Mã | Tên Business Requirement | Diễn giải |
 |---|---|---|---|
 | BR01 | Quản lý tài khoản khách hàng | Hệ thống cho phép khách hàng đăng ký, đăng nhập và quản lý thông tin cá nhân. |
@@ -327,12 +325,9 @@ Hệ thống giúp **giảm thời gian xử lý, nâng cao chất lượng dị
 
 ---
 
-## B6.  Business Process:
+# B6. Business Process – CAB System
 
-# Business Process – CAB System
-
- 1. Quy trình đặt chuyến xe – BP01
-
+### BP01 – Quy trình đặt chuyến xe
 ```mermaid
 flowchart TD
     A([Bắt đầu]) --> B[Khách hàng đăng nhập]
@@ -345,7 +340,8 @@ flowchart TD
     H --> I[Thông báo yêu cầu đã được tiếp nhận]
     I --> J([Chuyển sang tìm tài xế])
 ```
-2. Quy trình tìm và phân công tài xế – BP02
+
+### BP02 – Quy trình tìm và phân công tài xế
 ```mermaid
 flowchart TD
     A([Nhận yêu cầu đặt xe]) --> B[Xác định các tài xế phù hợp]
@@ -353,31 +349,27 @@ flowchart TD
     C --> D[Kiểm tra trạng thái sẵn sàng]
     D --> E[Ưu tiên tài xế phù hợp và gần khách hàng]
     E --> F{Có tài xế phù hợp?}
-
     F -- Không --> G[Thông báo không tìm được tài xế]
     G --> H([Kết thúc])
-
     F -- Có --> I[Gửi yêu cầu chuyến đến tài xế]
     I --> J{Tài xế phản hồi?}
-
     J -- Không --> K[Chờ hết thời gian phản hồi]
     K --> L[Tìm tài xế tiếp theo]
     L --> I
-
     J -- Có --> M{Tài xế chấp nhận?}
     M -- Không --> L
     M -- Có --> N[Phân công chuyến cho tài xế]
     N --> O[Thông báo cho khách hàng]
     O --> P([Bắt đầu chuyến])
 ```
-3. Quy trình theo dõi chuyến đi – BP03
+
+### BP03 – Quy trình theo dõi chuyến đi
 ```mermaid
 flowchart TD
     A([Tài xế nhận chuyến]) --> B[Hiển thị thông tin tài xế]
     B --> C[Hiển thị vị trí tài xế]
     C --> D[Tài xế di chuyển đến điểm đón]
     D --> E{Tài xế đã đến?}
-
     E -- Chưa --> C
     E -- Rồi --> F[Cập nhật trạng thái đã đến]
     F --> G[Thông báo cho khách hàng]
@@ -388,52 +380,48 @@ flowchart TD
     K --> L[Hoàn thành chuyến]
     L --> M[Cập nhật trạng thái hoàn thành]
 ```
-4. Quy trình quản lý tài xế – BP04
-   ```mermaid
-   flowchart TD
+
+### BP04 – Quy trình quản lý tài xế
+```mermaid
+flowchart TD
     A([Nhân viên vận hành]) --> B[Đăng ký hoặc tạo tài khoản tài xế]
     B --> C[Nhập thông tin tài xế]
     C --> D[Nhập thông tin phương tiện]
     D --> E[Kiểm tra thông tin]
     E --> F{Thông tin hợp lệ?}
-
     F -- Không --> G[Yêu cầu cập nhật thông tin]
     G --> C
-
     F -- Có --> H[Tạo hồ sơ tài xế]
     H --> I[Tài xế đăng nhập]
     I --> J[Cập nhật trạng thái hoạt động]
     J --> K{Sẵn sàng nhận chuyến?}
-
     K -- Có --> L[Đưa tài xế vào danh sách có thể nhận chuyến]
     K -- Không --> M[Không phân công chuyến]
-   ```
-5. Quy trình quản lý chuyến đi – BP05
-   ```mermaid
-    flowchart TD
+```
+
+### BP05 – Quy trình quản lý chuyến đi
+```mermaid
+flowchart TD
     A([Tạo yêu cầu]) --> B[Chờ tìm tài xế]
     B --> C{Đã có tài xế?}
-
     C -- Không --> D[Tiếp tục tìm tài xế]
     D --> C
-
     C -- Có --> E[Đã phân công tài xế]
     E --> F[Tài xế đang đến]
     F --> G[Đã đến điểm đón]
     G --> H[Đã đón khách]
     H --> I[Đang di chuyển]
     I --> J[Hoàn thành chuyến]
-
     B --> K{Khách hàng hủy?}
     K -- Có --> L[Hủy chuyến]
     K -- Không --> C
-
     L --> M[Lưu thông tin hủy chuyến]
     J --> N[Lưu thông tin chuyến]
-    ```
-6. Quy trình tính cước – BP06
-   ```mermaid
-   flowchart TD
+```
+
+### BP06 – Quy trình tính cước
+```mermaid
+flowchart TD
     A([Chuyến hoàn thành]) --> B[Lấy thông tin chuyến]
     B --> C[Xác định loại dịch vụ]
     C --> D[Xác định thông tin quãng đường và chuyến đi]
@@ -442,55 +430,49 @@ flowchart TD
     F --> G[Lưu thông tin cước]
     G --> H[Thông báo số tiền phải trả cho khách hàng]
     H --> I([Chuyển sang thanh toán])
-   ```
-7. Quy trình thanh toán – BP07
-   ```mermaid
-   flowchart TD
-    A([Nhận số tiền phải trả]) --> B{Chọn phương thức thanh toán}
+```
 
+### BP07 – Quy trình thanh toán
+```mermaid
+flowchart TD
+    A([Nhận số tiền phải trả]) --> B{Chọn phương thức thanh toán}
     B -- Tiền mặt --> C[Khách hàng thanh toán tiền mặt]
     C --> D[Xác nhận thanh toán]
     D --> E[Lưu giao dịch]
-
     B -- Thanh toán điện tử --> F[Gửi yêu cầu đến nhà cung cấp thanh toán]
     F --> G{Thanh toán thành công?}
-
     G -- Có --> H[Nhận kết quả giao dịch]
     H --> E
-
     G -- Không --> I[Thông báo thanh toán thất bại]
     I --> J{Khách hàng muốn thanh toán lại?}
-
     J -- Có --> F
     J -- Không --> K[Lưu giao dịch thất bại]
-
     E --> L[Thông báo kết quả thanh toán]
     K --> L
-   ```
-8. Quy trình thông báo – BP08
-    ```mermaid
-    flowchart TD
-    A([Có sự kiện trong hệ thống]) --> B{Loại sự kiện}
+```
 
+### BP08 – Quy trình thông báo
+```mermaid
+flowchart TD
+    A([Có sự kiện trong hệ thống]) --> B{Loại sự kiện}
     B -- Đặt xe --> C[Thông báo yêu cầu đã được tiếp nhận]
     B -- Tài xế nhận chuyến --> D[Thông báo tài xế đã nhận chuyến]
     B -- Tài xế đến --> E[Thông báo tài xế đã đến]
     B -- Hoàn thành chuyến --> F[Thông báo chuyến đã hoàn thành]
     B -- Thanh toán --> G[Thông báo kết quả thanh toán]
     B -- Chuyến mới --> H[Thông báo cho tài xế]
-
     C --> I[Gửi thông báo]
     D --> I
     E --> I
     F --> I
     G --> I
     H --> I
-
     I --> J([Kết thúc])
-    ```
-9. Quy trình đánh giá tài xế – BP09
-    ```mermaid
-    flowchart TD
+```
+
+### BP09 – Quy trình đánh giá tài xế
+```mermaid
+flowchart TD
     A([Chuyến hoàn thành]) --> B[Hiển thị yêu cầu đánh giá]
     B --> C[Khách hàng đánh giá tài xế]
     C --> D[Nhập điểm đánh giá]
@@ -499,36 +481,33 @@ flowchart TD
     F --> G[Lưu đánh giá]
     G --> H[Cập nhật dữ liệu đánh giá tài xế]
     H --> I([Kết thúc])
-    ```
-10. Quy trình quản lý vận hành – BP10\
-    ```mermaid
-    flowchart TD
+```
+
+### BP10 – Quy trình quản lý vận hành
+```mermaid
+flowchart TD
     A([Nhân viên vận hành đăng nhập]) --> B[Xác thực tài khoản]
     B --> C{Có quyền truy cập?}
-
     C -- Không --> D[Từ chối truy cập]
     D --> E([Kết thúc])
-
     C -- Có --> F[Truy cập giao diện quản trị]
     F --> G{Chọn chức năng}
-
     G -- Quản lý khách hàng --> H[Thêm/Sửa/Xem khách hàng]
     G -- Quản lý tài xế --> I[Thêm/Sửa/Xem tài xế]
     G -- Quản lý phương tiện --> J[Thêm/Sửa/Xem phương tiện]
     G -- Quản lý chuyến --> K[Xem và xử lý chuyến]
     G -- Quản lý giao dịch --> L[Tra cứu giao dịch]
-
     H --> M[Lưu thay đổi]
     I --> M
     J --> M
     K --> M
     L --> M
-
     M --> N([Kết thúc])
-    ```
-11. Quy trình báo cáo hoạt động – BP11
-    ```mermaid
-    flowchart TD
+```
+
+### BP11 – Quy trình báo cáo hoạt động
+```mermaid
+flowchart TD
     A([Nhân viên/Quản lý yêu cầu báo cáo]) --> B[Chọn khoảng thời gian]
     B --> C[Hệ thống lấy dữ liệu]
     C --> D[Tổng hợp số lượng chuyến]
@@ -538,30 +517,30 @@ flowchart TD
     G --> H[Phân tích hiệu quả tài xế]
     H --> I[Hiển thị báo cáo]
     I --> J([Kết thúc])
-    ```
-12. Quy trình bảo mật và phân quyền – BP12
-     ```mermaid
-     flowchart TD
+```
+
+### BP12 – Quy trình bảo mật và phân quyền
+```mermaid
+flowchart TD
     A([Người dùng truy cập hệ thống]) --> B[Nhập thông tin đăng nhập]
     B --> C[Xác thực tài khoản]
     C --> D{Thông tin hợp lệ?}
-
     D -- Không --> E[Thông báo đăng nhập thất bại]
     E --> F([Kết thúc])
-
     D -- Có --> G[Xác định vai trò người dùng]
     G --> H[Kiểm tra quyền truy cập]
     H --> I{Có quyền thực hiện?}
-
     I -- Không --> J[Từ chối thao tác]
     J --> K[Ghi nhận log]
     K --> L([Kết thúc])
-
     I -- Có --> M[Cho phép thực hiện chức năng]
     M --> N[Ghi nhận thao tác quan trọng]
     N --> O[Bảo vệ dữ liệu]
     O --> P([Kết thúc])
-     ````
+```
+
+---
+
 # B7. Xây dựng Business Requirement và phân rã thành Functional Requirement
 
 ## 1. Nguyên tắc phân rã
