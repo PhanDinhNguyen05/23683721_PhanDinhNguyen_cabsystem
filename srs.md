@@ -33,11 +33,9 @@ So với hệ thống cũ, CAB System giúp **tự động hóa việc tìm tài
 
 Hệ thống giúp **giảm thời gian xử lý, nâng cao chất lượng dịch vụ, tăng hiệu quả vận hành và tạo nền tảng để doanh nghiệp mở rộng trong tương lai**.
 
-
 # B2. Xác định các bên liên quan (Stakeholders)
-1.	Những stalkholder - 	Vai trò là gì 
-2.	Vẽ ma trận stalkholder matrick
-## 1. Những stalkholder - 	Vai trò là gì 
+
+## 1. Danh sách Stakeholder và vai trò
 
 | Stakeholder | Vai trò |
 |---|---|
@@ -51,25 +49,16 @@ Hệ thống giúp **giảm thời gian xử lý, nâng cao chất lượng dị
 | Business Analyst (BA) | Thu thập, phân tích và làm rõ yêu cầu của các bên liên quan. |
 | Đội phát triển hệ thống | Thiết kế, xây dựng, kiểm thử và triển khai hệ thống. |
 
-2.	Vẽ ma trận stalkholder matrick
-## 3. Stakeholder Matrix
-
-Ma trận Stakeholder được phân tích dựa trên hai tiêu chí:
-
-- **Mức độ ảnh hưởng (Power):** Khả năng tác động đến quyết định, phạm vi, tiến độ và kết quả dự án.
-- **Mức độ quan tâm (Interest):** Mức độ quan tâm của stakeholder đối với kết quả và hoạt động của hệ thống.
+## 2. Stakeholder Matrix
 
 | MỨC ĐỘ ẢNH HƯỞNG | MỨC ĐỘ QUAN TÂM THẤP | MỨC ĐỘ QUAN TÂM CAO |
 |---|---|---|
 | **CAO** | Bộ phận tài chính<br>Nhà cung cấp thanh toán<br>Nhà cung cấp thông báo | Ban lãnh đạo<br>Nhân viên vận hành<br>System Admin<br>Business Analyst |
 | **THẤP** | Stakeholder gián tiếp | Khách hàng<br>Tài xế<br>Đội phát triển<br>QA/Test |
 
-### Sơ đồ Stakeholder Matrix
-
 ```text
                     MỨC ĐỘ ẢNH HƯỞNG (POWER)
                               CAO
-                               │
                                │
           KEEP SATISFIED      │        MANAGE CLOSELY
                                │
@@ -87,11 +76,12 @@ Ma trận Stakeholder được phân tích dựa trên hai tiêu chí:
                                │        Đội phát triển
                                │        QA / Test
                                │
-                               │
                               THẤP
                     MỨC ĐỘ QUAN TÂM (INTEREST)
                          THẤP       →       CAO
 ```
+
+---
 # B3. Xác định Business Goals
 
 ## BG01. Tự động hóa quy trình đặt xe
