@@ -1,3 +1,12 @@
+# BỘ TÀI LIỆU PHÂN TÍCH NGHIỆP VỤ – DỰ ÁN CAB SYSTEM (MVP 7 TUẦN)
+*(Bản hiệu chỉnh: đồng bộ mã BG, bổ sung B12, cập nhật Use Case đủ 20 UC, tách rõ nhóm "Kiến trúc/Định hướng tương lai" khỏi phạm vi bắt buộc của MVP)*
+
+> **Quy ước nhãn dùng xuyên suốt tài liệu:**
+> - 🟢 **[MVP]** = phải hoàn thành trong 7 tuần, có thể kiểm thử trực tiếp qua Use Case/AC.
+> - 🔵 **[Định hướng kiến trúc]** = nguyên tắc thiết kế để hệ thống *không phải xây lại* khi mở rộng sau này; **không phải deliverable bắt buộc** của MVP (ví dụ: auto-scaling, backup nâng cao, giám sát hạ tầng, tách module độc lập hoàn toàn).
+
+---
+
 # B1. Xác định Business Context và Business Problem
 
 ## 1. Business Context – Bối cảnh nghiệp vụ
@@ -9,8 +18,6 @@ Công ty ABC đang cung cấp dịch vụ đặt xe trực tuyến thông qua t�
 Hệ thống cần tích hợp với **cổng thanh toán điện tử và dịch vụ thông báo** bên ngoài.
 
 ## 2. Business Problem – Vấn đề nghiệp vụ
-
-Hệ thống hiện tại tồn tại các vấn đề:
 
 - Phân công tài xế còn **thủ công**, mất thời gian và khó tối ưu.
 - Khách hàng **khó theo dõi trạng thái chuyến đi**.
@@ -29,9 +36,9 @@ Hệ thống hiện tại tồn tại các vấn đề:
 
 ## 4. Giá trị của hệ thống mới
 
-So với hệ thống cũ, CAB System giúp **tự động hóa việc tìm tài xế, theo dõi chuyến, thanh toán và thông báo**, đồng thời cung cấp dữ liệu phục vụ quản lý và báo cáo.
+CAB System giúp **tự động hóa việc tìm tài xế, theo dõi chuyến, thanh toán và thông báo**, đồng thời cung cấp dữ liệu phục vụ quản lý và báo cáo — **giảm thời gian xử lý, nâng cao chất lượng dịch vụ, tăng hiệu quả vận hành và tạo nền tảng để doanh nghiệp mở rộng trong tương lai**.
 
-Hệ thống giúp **giảm thời gian xử lý, nâng cao chất lượng dịch vụ, tăng hiệu quả vận hành và tạo nền tảng để doanh nghiệp mở rộng trong tương lai**.
+---
 
 # B2. Xác định các bên liên quan (Stakeholders)
 
@@ -85,67 +92,69 @@ Hệ thống giúp **giảm thời gian xử lý, nâng cao chất lượng dị
 
 # B3. Xác định Business Goals (BG) – Bộ mã chính thức toàn dự án
 
-## BG01. Tự động hóa quy trình đặt xe
+> **Bộ mã BG01–BG12 là duy nhất và chính thức**, dùng xuyên suốt B8, B14 (RTM).
+
+## BG01. Tự động hóa quy trình đặt xe 🟢[MVP]
 - Hệ thống tự động tiếp nhận và xử lý yêu cầu đặt xe.
 - Giảm thao tác thủ công của nhân viên vận hành.
 - Đảm bảo quy trình từ đặt xe đến hoàn thành chuyến được xử lý xuyên suốt.
 
-## BG02. Tự động tìm và phân công tài xế
+## BG02. Tự động tìm và phân công tài xế 🟢[MVP]
 - Hệ thống tự động tìm tài xế phù hợp.
 - Ưu tiên tài xế gần khách hàng và đang sẵn sàng.
 - Tự động tìm tài xế khác khi tài xế từ chối hoặc không phản hồi.
 - Thông báo cho khách hàng khi tìm được hoặc không tìm được tài xế.
 
-## BG03. Nâng cao trải nghiệm khách hàng
+## BG03. Nâng cao trải nghiệm khách hàng 🟢[MVP]
 - Cho phép khách hàng đặt xe nhanh chóng.
 - Cho phép khách hàng theo dõi trạng thái chuyến.
 - Cung cấp thông tin tài xế và thời gian dự kiến đến.
 - Cho phép khách hàng xem lịch sử chuyến và đánh giá tài xế.
 
-## BG04. Nâng cao hiệu quả vận hành
+## BG04. Nâng cao hiệu quả vận hành 🟢[MVP]
 - Cho phép nhân viên quản lý khách hàng, tài xế, phương tiện và chuyến đi.
 - Cho phép theo dõi các chuyến đang diễn ra.
 - Hỗ trợ xử lý các trường hợp chuyến bị lỗi.
 - Hỗ trợ tra cứu lịch sử giao dịch.
 
-## BG05. Quản lý tính cước và thanh toán
+## BG05. Quản lý tính cước và thanh toán 🟢[MVP]
 - Tự động xác định số tiền khách hàng phải thanh toán.
 - Hỗ trợ thanh toán tiền mặt.
 - Hỗ trợ thanh toán điện tử thông qua Payment Provider.
 - Xử lý trường hợp thanh toán thất bại.
 - Không lưu trực tiếp thông tin thanh toán nhạy cảm.
 
-## BG06. Xây dựng hệ thống thông báo
+## BG06. Xây dựng hệ thống thông báo 🟢[MVP]
 - Thông báo cho khách hàng về các sự kiện quan trọng của chuyến.
 - Thông báo cho tài xế khi có chuyến mới hoặc thay đổi chuyến.
-- Cho phép mở rộng thêm các kênh thông báo trong tương lai.
+- Cho phép mở rộng thêm các kênh thông báo trong tương lai *(thiết kế mở — 🔵 phần mở rộng thật sự để sau MVP)*.
 
-## BG07. Quản lý và khai thác dữ liệu
+## BG07. Quản lý và khai thác dữ liệu 🟢[MVP]
 - Lưu trữ lịch sử chuyến đi, lịch sử giao dịch, dữ liệu vị trí tài xế.
 - Lưu vết các thao tác quan trọng.
 - Hỗ trợ tra cứu và kiểm tra dữ liệu khi xảy ra sự cố.
 
-## BG08. Hỗ trợ báo cáo và quản lý hiệu quả
+## BG08. Hỗ trợ báo cáo và quản lý hiệu quả 🟢[MVP]
 - Theo dõi số lượng chuyến, doanh thu, tỷ lệ hoàn thành, tỷ lệ hủy, hiệu quả tài xế.
 
-## BG09. Đảm bảo bảo mật và phân quyền
+## BG09. Đảm bảo bảo mật và phân quyền 🟢[MVP]
 - Xác thực khách hàng, tài xế và nhân viên.
 - Phân quyền chức năng quản trị.
 - Bảo vệ thông tin cá nhân, dữ liệu phương tiện/vị trí/giao dịch.
 - Lưu audit log đối với các thao tác quan trọng.
 
-## BG10. Đảm bảo tính ổn định và khả năng mở rộng
+## BG10. Đảm bảo tính ổn định và khả năng mở rộng 🔵[Định hướng kiến trúc]
 - Hệ thống hoạt động ổn định khi nhu cầu tăng cao.
 - Các thành phần có khả năng mở rộng độc lập.
 - Lỗi ở Payment/Notification không làm toàn bộ hệ thống đặt xe ngừng hoạt động *(riêng nguyên tắc "lỗi không lan" áp dụng ngay trong MVP — xem BR42)*.
 - Cho phép triển khai từng phần mà hạn chế ảnh hưởng đến chức năng đang hoạt động.
 
-## BG11. Hỗ trợ phát triển hệ thống trong tương lai
+## BG11. Hỗ trợ phát triển hệ thống trong tương lai 🔵[Định hướng kiến trúc]
 - Cho phép bổ sung loại dịch vụ mới, phương thức thanh toán mới.
 - Cho phép tích hợp thêm Payment Provider, Notification Provider.
 - Cho phép thay đổi thành phần kỹ thuật mà không phải xây dựng lại toàn bộ hệ thống.
 
-## BG12. Hoàn thành MVP trong 7 tuần
+## BG12. Hoàn thành MVP trong 7 tuần 🟢[MVP – mục tiêu bao trùm]
 - Xác định và ưu tiên các chức năng cốt lõi.
 - Hoàn thành phiên bản MVP trong thời gian 7 tuần.
 - Ưu tiên quy trình:
@@ -190,7 +199,7 @@ Hệ thống giúp **giảm thời gian xử lý, nâng cao chất lượng dị
 ## 6. Thông báo
 - Thông báo trạng thái đặt xe, tài xế nhận chuyến, tài xế đến, chuyến hoàn thành, kết quả thanh toán.
 - Thông báo cho tài xế về chuyến mới và thay đổi liên quan.
-- Hỗ trợ mở rộng thêm kênh thông báo trong tương lai.
+- Hỗ trợ mở rộng thêm kênh thông báo trong tương lai (🔵 phần mở rộng thực tế nằm sau MVP).
 
 ## 7. Đánh giá và phản hồi
 - Khách hàng đánh giá tài xế sau khi hoàn thành chuyến; lưu và theo dõi chất lượng.
@@ -274,54 +283,56 @@ Hệ thống giúp **giảm thời gian xử lý, nâng cao chất lượng dị
 
 # B5. Chuyển đổi yêu cầu thành Business Requirements (BR)
 
-| Mã | Tên Business Requirement | Diễn giải |
+> Nhãn 🟢/🔵 đánh dấu BR nào là deliverable bắt buộc của MVP và BR nào là nguyên tắc thiết kế dài hạn.
+
+| Mã | Tên Business Requirement | Nhãn | Diễn giải |
 |---|---|---|---|
-| BR01 | Quản lý tài khoản khách hàng | Hệ thống cho phép khách hàng đăng ký, đăng nhập và quản lý thông tin cá nhân. |
-| BR02 | Quản lý tài khoản tài xế | Hệ thống cho phép tạo và quản lý tài khoản, hồ sơ và thông tin hoạt động của tài xế. |
-| BR03 | Quản lý phương tiện | Hệ thống cho phép quản lý thông tin phương tiện được sử dụng để thực hiện chuyến đi. |
-| BR04 | Quản lý quyền truy cập | Hệ thống cho phép phân quyền cho nhân viên vận hành và quản trị viên theo vai trò. |
-| BR05 | Quản lý trạng thái tài xế | Hệ thống cho phép tài xế cập nhật trạng thái hoạt động và sẵn sàng nhận chuyến. |
-| BR06 | Theo dõi vị trí tài xế | Hệ thống lưu và cập nhật vị trí tài xế để phục vụ tìm kiếm và phân công chuyến. |
-| BR07 | Tạo yêu cầu đặt xe | Hệ thống cho phép khách hàng nhập điểm đón, điểm đến và loại xe để tạo yêu cầu. |
-| BR08 | Tiếp nhận yêu cầu đặt xe | Hệ thống tiếp nhận và lưu thông tin yêu cầu đặt xe của khách hàng. |
-| BR09 | Tự động tìm tài xế | Hệ thống tự động tìm tài xế phù hợp dựa trên vị trí, trạng thái, tiêu chí vận hành. |
-| BR10 | Ưu tiên tài xế phù hợp | Hệ thống ưu tiên tài xế phù hợp và gần khách hàng theo tiêu chí vận hành. |
-| BR11 | Xử lý tài xế từ chối/không phản hồi | Hệ thống tiếp tục tìm tài xế khác khi bị từ chối/không phản hồi. |
-| BR12 | Thông báo không tìm được tài xế | Hệ thống thông báo rõ ràng khi không tìm được tài xế phù hợp. |
-| BR13 | Phân công tài xế | Hệ thống xác nhận và gán tài xế cho chuyến khi tài xế chấp nhận. |
-| BR14 | Quản lý trạng thái chuyến đi | Hệ thống quản lý và cập nhật trạng thái chuyến từ lúc tạo đến hoàn thành/hủy. |
-| BR15 | Theo dõi chuyến đi | Hệ thống cho phép khách hàng theo dõi trạng thái và thông tin chuyến. |
-| BR16 | Theo dõi thời gian dự kiến | Hệ thống cung cấp ETA tài xế đến điểm đón cho khách hàng. |
-| BR17 | Xử lý chuyến bị hủy hoặc lỗi | Hệ thống hỗ trợ xử lý chuyến bị hủy/sự cố theo chính sách doanh nghiệp. |
-| BR18 | Lưu lịch sử chuyến đi | Hệ thống lưu trữ thông tin chuyến để tra cứu khi cần. |
-| BR19 | Tính cước chuyến đi | Hệ thống xác định số tiền khách hàng phải trả dựa trên loại dịch vụ và thông tin chuyến. |
-| BR20 | Thanh toán tiền mặt | Hệ thống hỗ trợ ghi nhận và quản lý kết quả thanh toán bằng tiền mặt. |
-| BR21 | Thanh toán điện tử | Hệ thống hỗ trợ thanh toán điện tử qua nhà cung cấp thanh toán bên ngoài. |
-| BR22 | Quản lý kết quả thanh toán | Hệ thống tiếp nhận, lưu trữ và cập nhật trạng thái giao dịch thanh toán. |
-| BR23 | Xử lý thanh toán thất bại | Hệ thống thông báo và hỗ trợ xử lý lại khi thanh toán thất bại. |
-| BR24 | Bảo vệ thông tin thanh toán | Hệ thống không lưu trực tiếp thông tin nhạy cảm của thẻ/tài khoản. |
-| BR25 | Quản lý lịch sử giao dịch | Hệ thống lưu trữ và cho phép nhân viên tra cứu lịch sử giao dịch. |
-| BR26 | Thông báo trạng thái đặt xe | Gửi thông báo khi yêu cầu tiếp nhận và khi trạng thái chuyến thay đổi. |
-| BR27 | Thông báo cho tài xế | Gửi thông báo cho tài xế khi có chuyến mới hoặc thay đổi liên quan. |
-| BR28 | Mở rộng kênh thông báo | Thiết kế để bổ sung thêm kênh thông báo trong tương lai. |
-| BR29 | Đánh giá tài xế | Cho phép khách hàng đánh giá tài xế sau khi chuyến hoàn thành. |
-| BR30 | Quản lý phản hồi | Lưu trữ thông tin đánh giá và phản hồi của khách hàng. |
-| BR31 | Quản lý khách hàng | Chức năng cho nhân viên vận hành quản lý/tra cứu thông tin khách hàng. |
-| BR32 | Quản lý tài xế và phương tiện | Chức năng cho nhân viên vận hành quản lý tài xế và phương tiện. |
-| BR33 | Theo dõi chuyến đang diễn ra | Nhân viên vận hành theo dõi các chuyến đang thực hiện. |
-| BR34 | Hỗ trợ xử lý sự cố | Nhân viên vận hành kiểm tra và hỗ trợ xử lý chuyến bị lỗi. |
-| BR35 | Báo cáo hoạt động | Cung cấp báo cáo số chuyến, doanh thu, tỷ lệ hoàn thành/hủy. |
-| BR36 | Báo cáo hiệu quả tài xế | Cung cấp dữ liệu và báo cáo đánh giá hiệu quả tài xế. |
-| BR37 | Xác thực người dùng | Yêu cầu xác thực trước khi sử dụng chức năng cần tài khoản. |
-| BR38 | Kiểm soát quyền truy cập | Kiểm soát quyền truy cập dựa trên vai trò và quyền hạn. |
-| BR39 | Bảo vệ dữ liệu | Bảo vệ thông tin cá nhân, phương tiện, vị trí, giao dịch. |
-| BR40 | Lưu vết thao tác | Lưu lại các thao tác quan trọng phục vụ kiểm tra, truy vết. |
-| BR41 | Đảm bảo khả năng mở rộng | Thiết kế để mở rộng số lượng KH/tài xế/thành phần khi nhu cầu tăng. |
-| BR42 | Đảm bảo tính độc lập của các thành phần | Hạn chế lỗi tại Payment/Notification ảnh hưởng toàn bộ đặt xe *(nguyên tắc cần áp dụng ngay trong code MVP — không phải hạ tầng phức tạp)*. |
-| BR43 | Hỗ trợ triển khai từng phần | Cho phép triển khai chức năng mới từng phần, hạn chế ảnh hưởng hệ thống đang chạy. |
-| BR44 | Hỗ trợ mở rộng dịch vụ | Kiến trúc cho phép bổ sung loại dịch vụ mới trong tương lai. |
-| BR45 | Hỗ trợ mở rộng phương thức thanh toán | Cho phép tích hợp thêm phương thức/nhà cung cấp thanh toán. |
-| BR46 | Hỗ trợ mở rộng nhà cung cấp thông báo | Cho phép thay đổi/bổ sung nhà cung cấp thông báo trong tương lai. |
+| BR01 | Quản lý tài khoản khách hàng | 🟢 | Hệ thống cho phép khách hàng đăng ký, đăng nhập và quản lý thông tin cá nhân. |
+| BR02 | Quản lý tài khoản tài xế | 🟢 | Hệ thống cho phép tạo và quản lý tài khoản, hồ sơ và thông tin hoạt động của tài xế. |
+| BR03 | Quản lý phương tiện | 🟢 | Hệ thống cho phép quản lý thông tin phương tiện được sử dụng để thực hiện chuyến đi. |
+| BR04 | Quản lý quyền truy cập | 🟢 | Hệ thống cho phép phân quyền cho nhân viên vận hành và quản trị viên theo vai trò. |
+| BR05 | Quản lý trạng thái tài xế | 🟢 | Hệ thống cho phép tài xế cập nhật trạng thái hoạt động và sẵn sàng nhận chuyến. |
+| BR06 | Theo dõi vị trí tài xế | 🟢 | Hệ thống lưu và cập nhật vị trí tài xế để phục vụ tìm kiếm và phân công chuyến. |
+| BR07 | Tạo yêu cầu đặt xe | 🟢 | Hệ thống cho phép khách hàng nhập điểm đón, điểm đến và loại xe để tạo yêu cầu. |
+| BR08 | Tiếp nhận yêu cầu đặt xe | 🟢 | Hệ thống tiếp nhận và lưu thông tin yêu cầu đặt xe của khách hàng. |
+| BR09 | Tự động tìm tài xế | 🟢 | Hệ thống tự động tìm tài xế phù hợp dựa trên vị trí, trạng thái, tiêu chí vận hành. |
+| BR10 | Ưu tiên tài xế phù hợp | 🟢 | Hệ thống ưu tiên tài xế phù hợp và gần khách hàng theo tiêu chí vận hành. |
+| BR11 | Xử lý tài xế từ chối/không phản hồi | 🟢 | Hệ thống tiếp tục tìm tài xế khác khi bị từ chối/không phản hồi. |
+| BR12 | Thông báo không tìm được tài xế | 🟢 | Hệ thống thông báo rõ ràng khi không tìm được tài xế phù hợp. |
+| BR13 | Phân công tài xế | 🟢 | Hệ thống xác nhận và gán tài xế cho chuyến khi tài xế chấp nhận. |
+| BR14 | Quản lý trạng thái chuyến đi | 🟢 | Hệ thống quản lý và cập nhật trạng thái chuyến từ lúc tạo đến hoàn thành/hủy. |
+| BR15 | Theo dõi chuyến đi | 🟢 | Hệ thống cho phép khách hàng theo dõi trạng thái và thông tin chuyến. |
+| BR16 | Theo dõi thời gian dự kiến | 🟢 | Hệ thống cung cấp ETA tài xế đến điểm đón cho khách hàng. |
+| BR17 | Xử lý chuyến bị hủy hoặc lỗi | 🟢 | Hệ thống hỗ trợ xử lý chuyến bị hủy/sự cố theo chính sách doanh nghiệp. |
+| BR18 | Lưu lịch sử chuyến đi | 🟢 | Hệ thống lưu trữ thông tin chuyến để tra cứu khi cần. |
+| BR19 | Tính cước chuyến đi | 🟢 | Hệ thống xác định số tiền khách hàng phải trả dựa trên loại dịch vụ và thông tin chuyến. |
+| BR20 | Thanh toán tiền mặt | 🟢 | Hệ thống hỗ trợ ghi nhận và quản lý kết quả thanh toán bằng tiền mặt. |
+| BR21 | Thanh toán điện tử | 🟢 | Hệ thống hỗ trợ thanh toán điện tử qua nhà cung cấp thanh toán bên ngoài. |
+| BR22 | Quản lý kết quả thanh toán | 🟢 | Hệ thống tiếp nhận, lưu trữ và cập nhật trạng thái giao dịch thanh toán. |
+| BR23 | Xử lý thanh toán thất bại | 🟢 | Hệ thống thông báo và hỗ trợ xử lý lại khi thanh toán thất bại. |
+| BR24 | Bảo vệ thông tin thanh toán | 🟢 | Hệ thống không lưu trực tiếp thông tin nhạy cảm của thẻ/tài khoản. |
+| BR25 | Quản lý lịch sử giao dịch | 🟢 | Hệ thống lưu trữ và cho phép nhân viên tra cứu lịch sử giao dịch. |
+| BR26 | Thông báo trạng thái đặt xe | 🟢 | Gửi thông báo khi yêu cầu tiếp nhận và khi trạng thái chuyến thay đổi. |
+| BR27 | Thông báo cho tài xế | 🟢 | Gửi thông báo cho tài xế khi có chuyến mới hoặc thay đổi liên quan. |
+| BR28 | Mở rộng kênh thông báo | 🔵 | Thiết kế để bổ sung thêm kênh thông báo trong tương lai. |
+| BR29 | Đánh giá tài xế | 🟢 | Cho phép khách hàng đánh giá tài xế sau khi chuyến hoàn thành. |
+| BR30 | Quản lý phản hồi | 🟢 | Lưu trữ thông tin đánh giá và phản hồi của khách hàng. |
+| BR31 | Quản lý khách hàng | 🟢 | Chức năng cho nhân viên vận hành quản lý/tra cứu thông tin khách hàng. |
+| BR32 | Quản lý tài xế và phương tiện | 🟢 | Chức năng cho nhân viên vận hành quản lý tài xế và phương tiện. |
+| BR33 | Theo dõi chuyến đang diễn ra | 🟢 | Nhân viên vận hành theo dõi các chuyến đang thực hiện. |
+| BR34 | Hỗ trợ xử lý sự cố | 🟢 | Nhân viên vận hành kiểm tra và hỗ trợ xử lý chuyến bị lỗi. |
+| BR35 | Báo cáo hoạt động | 🟢 | Cung cấp báo cáo số chuyến, doanh thu, tỷ lệ hoàn thành/hủy. |
+| BR36 | Báo cáo hiệu quả tài xế | 🟢 | Cung cấp dữ liệu và báo cáo đánh giá hiệu quả tài xế. |
+| BR37 | Xác thực người dùng | 🟢 | Yêu cầu xác thực trước khi sử dụng chức năng cần tài khoản. |
+| BR38 | Kiểm soát quyền truy cập | 🟢 | Kiểm soát quyền truy cập dựa trên vai trò và quyền hạn. |
+| BR39 | Bảo vệ dữ liệu | 🟢 | Bảo vệ thông tin cá nhân, phương tiện, vị trí, giao dịch. |
+| BR40 | Lưu vết thao tác | 🟢 | Lưu lại các thao tác quan trọng phục vụ kiểm tra, truy vết. |
+| BR41 | Đảm bảo khả năng mở rộng | 🔵 | Thiết kế để mở rộng số lượng KH/tài xế/thành phần khi nhu cầu tăng. |
+| BR42 | Đảm bảo tính độc lập của các thành phần | 🟢* | Hạn chế lỗi tại Payment/Notification ảnh hưởng toàn bộ đặt xe *(nguyên tắc cần áp dụng ngay trong code MVP — không phải hạ tầng phức tạp)*. |
+| BR43 | Hỗ trợ triển khai từng phần | 🔵 | Cho phép triển khai chức năng mới từng phần, hạn chế ảnh hưởng hệ thống đang chạy. |
+| BR44 | Hỗ trợ mở rộng dịch vụ | 🔵 | Kiến trúc cho phép bổ sung loại dịch vụ mới trong tương lai. |
+| BR45 | Hỗ trợ mở rộng phương thức thanh toán | 🔵 | Cho phép tích hợp thêm phương thức/nhà cung cấp thanh toán. |
+| BR46 | Hỗ trợ mở rộng nhà cung cấp thông báo | 🔵 | Cho phép thay đổi/bổ sung nhà cung cấp thông báo trong tương lai. |
 
 ---
 
@@ -541,7 +552,6 @@ flowchart TD
 
 ---
 
-
 # B7. Xây dựng Business Requirement và phân rã thành Functional Requirement (FR)
 
 ## 1. Nguyên tắc phân rã
@@ -550,7 +560,7 @@ flowchart TD
 Business Requirement (BR) → Functional Requirement (FR) → Function/Module hệ thống
 ```
 
-## 2. Danh mục Functional Requirement (FR01–FR14)
+## 2. Danh mục Functional Requirement (FR01–FR14) — tất cả 🟢[MVP]
 
 | Mã FR | Tên FR | Mô tả tổng quát |
 |---|---|---|
@@ -571,54 +581,54 @@ Business Requirement (BR) → Functional Requirement (FR) → Function/Module h�
 
 ## 3. Bảng phân rã Business Requirement → Functional Requirement
 
-| Mã BR | Mã FR | Functional Requirement áp dụng |
+| Mã BR | Nhãn | Mã FR | Functional Requirement áp dụng |
 |---|---|---|---|
-| BR01 | FR01 | Đăng ký, đăng nhập, đăng xuất và cập nhật thông tin người dùng. |
-| BR02 | FR01 | Tạo tài khoản, đăng nhập và cập nhật thông tin hồ sơ tài xế. |
-| BR03 | FR11 | Thêm, sửa, xem và quản lý thông tin phương tiện. |
-| BR04 | FR13 | Phân quyền và kiểm soát quyền truy cập các chức năng quản trị. |
-| BR05 | FR11 | Cập nhật và theo dõi trạng thái hoạt động, sẵn sàng nhận chuyến. |
-| BR06 | FR06 | Cập nhật, lưu, theo dõi vị trí tài xế phục vụ tìm xe và ETA. |
-| BR07 | FR02 | Nhập điểm đón, điểm đến, chọn loại xe và gửi yêu cầu đặt xe. |
-| BR08 | FR02 | Kiểm tra, tạo, lưu yêu cầu đặt xe, cập nhật trạng thái chuyến. |
-| BR09 | FR03 | Xác định và tìm tài xế phù hợp dựa trên vị trí, trạng thái, loại xe. |
-| BR10 | FR03 | Ưu tiên tài xế phù hợp và gần khách hàng theo tiêu chí vận hành. |
-| BR11 | FR04 | Ghi nhận từ chối/không phản hồi và tiếp tục tìm tài xế khác. |
-| BR12 | FR09 | Thông báo khi hệ thống không tìm được tài xế phù hợp. |
-| BR13 | FR04 | Gửi yêu cầu, ghi nhận chấp nhận, phân công tài xế cho chuyến. |
-| BR14 | FR05 | Tạo, cập nhật, quản lý trạng thái chuyến từ đặt xe đến hoàn thành/hủy. |
-| BR15 | FR05 | Cho phép khách hàng theo dõi trạng thái và thông tin chuyến. |
-| BR16 | FR06 | Xác định và hiển thị ETA tài xế đến điểm đón. |
-| BR17 | FR05 | Xử lý hủy chuyến, ghi nhận lý do, hỗ trợ xử lý chuyến bị lỗi. |
-| BR18 | FR14 | Lưu và cho phép tra cứu lịch sử các chuyến đi. |
-| BR19 | FR07 | Tính số tiền khách hàng phải trả dựa trên loại dịch vụ và thông tin chuyến. |
-| BR20 | FR08 | Hỗ trợ lựa chọn và ghi nhận thanh toán bằng tiền mặt. |
-| BR21 | FR08 | Tích hợp nhà cung cấp thanh toán bên ngoài để xử lý thanh toán điện tử. |
-| BR22 | FR08 | Ghi nhận và cập nhật trạng thái giao dịch thanh toán thành công/thất bại. |
-| BR23 | FR08 | Thông báo thất bại và cho phép thanh toán lại theo chính sách. |
-| BR24 | FR08 | Không lưu trực tiếp thông tin nhạy cảm của thẻ/tài khoản. |
-| BR25 | FR14 | Lưu và cho phép nhân viên vận hành tra cứu lịch sử giao dịch. |
-| BR26 | FR09 | Gửi thông báo theo các sự kiện quan trọng của chuyến. |
-| BR27 | FR09 | Gửi thông báo cho tài xế về chuyến mới và thay đổi liên quan. |
-| BR28 | FR09 | Hỗ trợ tích hợp thêm kênh/nhà cung cấp thông báo trong tương lai. |
-| BR29 | FR10 | Cho phép khách hàng đánh giá và nhận xét tài xế sau khi hoàn thành chuyến. |
-| BR30 | FR10 | Lưu và quản lý dữ liệu đánh giá, phản hồi của khách hàng. |
-| BR31 | FR11 | Nhân viên vận hành xem và quản lý thông tin khách hàng. |
-| BR32 | FR11 | Nhân viên vận hành quản lý thông tin tài xế và phương tiện. |
-| BR33 | FR11 | Nhân viên vận hành xem và theo dõi các chuyến đang diễn ra. |
-| BR34 | FR11 | Nhân viên vận hành xem và hỗ trợ xử lý các chuyến bị lỗi. |
-| BR35 | FR12 | Cung cấp báo cáo số lượng chuyến, doanh thu, tỷ lệ hoàn thành/hủy. |
-| BR36 | FR12 | Cung cấp báo cáo về hiệu quả hoạt động và đánh giá tài xế. |
-| BR37 | FR01 | Xác thực người dùng trước khi sử dụng chức năng yêu cầu tài khoản. |
-| BR38 | FR13 | Kiểm tra quyền của người dùng trước khi thực hiện thao tác quản trị. |
-| BR39 | FR13 | Kiểm soát quyền truy cập đối với dữ liệu cá nhân, phương tiện, vị trí, giao dịch. |
-| BR40 | FR13 | Ghi nhận các thao tác quan trọng để phục vụ kiểm tra, xử lý sự cố. |
-| BR41 | FR11 | Hỗ trợ mở rộng hệ thống khi số lượng người dùng, tài xế, chuyến tăng. |
-| BR42 | FR09 | Đảm bảo lỗi ở thông báo/thanh toán không làm dừng toàn bộ quy trình đặt xe. |
-| BR43 | FR11 | Cho phép các chức năng/thành phần được triển khai, nâng cấp từng phần. |
-| BR44 | FR02 | Cho phép bổ sung loại xe/dịch vụ mới trong tương lai. |
-| BR45 | FR08 | Cho phép tích hợp thêm phương thức/nhà cung cấp thanh toán. |
-| BR46 | FR09 | Cho phép tích hợp thêm kênh/nhà cung cấp thông báo mới. |
+| BR01 | 🟢 | FR01 | Đăng ký, đăng nhập, đăng xuất và cập nhật thông tin người dùng. |
+| BR02 | 🟢 | FR01 | Tạo tài khoản, đăng nhập và cập nhật thông tin hồ sơ tài xế. |
+| BR03 | 🟢 | FR11 | Thêm, sửa, xem và quản lý thông tin phương tiện. |
+| BR04 | 🟢 | FR13 | Phân quyền và kiểm soát quyền truy cập các chức năng quản trị. |
+| BR05 | 🟢 | FR11 | Cập nhật và theo dõi trạng thái hoạt động, sẵn sàng nhận chuyến. |
+| BR06 | 🟢 | FR06 | Cập nhật, lưu, theo dõi vị trí tài xế phục vụ tìm xe và ETA. |
+| BR07 | 🟢 | FR02 | Nhập điểm đón, điểm đến, chọn loại xe và gửi yêu cầu đặt xe. |
+| BR08 | 🟢 | FR02 | Kiểm tra, tạo, lưu yêu cầu đặt xe, cập nhật trạng thái chuyến. |
+| BR09 | 🟢 | FR03 | Xác định và tìm tài xế phù hợp dựa trên vị trí, trạng thái, loại xe. |
+| BR10 | 🟢 | FR03 | Ưu tiên tài xế phù hợp và gần khách hàng theo tiêu chí vận hành. |
+| BR11 | 🟢 | FR04 | Ghi nhận từ chối/không phản hồi và tiếp tục tìm tài xế khác. |
+| BR12 | 🟢 | FR09 | Thông báo khi hệ thống không tìm được tài xế phù hợp. |
+| BR13 | 🟢 | FR04 | Gửi yêu cầu, ghi nhận chấp nhận, phân công tài xế cho chuyến. |
+| BR14 | 🟢 | FR05 | Tạo, cập nhật, quản lý trạng thái chuyến từ đặt xe đến hoàn thành/hủy. |
+| BR15 | 🟢 | FR05 | Cho phép khách hàng theo dõi trạng thái và thông tin chuyến. |
+| BR16 | 🟢 | FR06 | Xác định và hiển thị ETA tài xế đến điểm đón. |
+| BR17 | 🟢 | FR05 | Xử lý hủy chuyến, ghi nhận lý do, hỗ trợ xử lý chuyến bị lỗi. |
+| BR18 | 🟢 | FR14 | Lưu và cho phép tra cứu lịch sử các chuyến đi. |
+| BR19 | 🟢 | FR07 | Tính số tiền khách hàng phải trả dựa trên loại dịch vụ và thông tin chuyến. |
+| BR20 | 🟢 | FR08 | Hỗ trợ lựa chọn và ghi nhận thanh toán bằng tiền mặt. |
+| BR21 | 🟢 | FR08 | Tích hợp nhà cung cấp thanh toán bên ngoài để xử lý thanh toán điện tử. |
+| BR22 | 🟢 | FR08 | Ghi nhận và cập nhật trạng thái giao dịch thanh toán thành công/thất bại. |
+| BR23 | 🟢 | FR08 | Thông báo thất bại và cho phép thanh toán lại theo chính sách. |
+| BR24 | 🟢 | FR08 | Không lưu trực tiếp thông tin nhạy cảm của thẻ/tài khoản. |
+| BR25 | 🟢 | FR14 | Lưu và cho phép nhân viên vận hành tra cứu lịch sử giao dịch. |
+| BR26 | 🟢 | FR09 | Gửi thông báo theo các sự kiện quan trọng của chuyến. |
+| BR27 | 🟢 | FR09 | Gửi thông báo cho tài xế về chuyến mới và thay đổi liên quan. |
+| BR28 | 🔵 | FR09 | Hỗ trợ tích hợp thêm kênh/nhà cung cấp thông báo trong tương lai. |
+| BR29 | 🟢 | FR10 | Cho phép khách hàng đánh giá và nhận xét tài xế sau khi hoàn thành chuyến. |
+| BR30 | 🟢 | FR10 | Lưu và quản lý dữ liệu đánh giá, phản hồi của khách hàng. |
+| BR31 | 🟢 | FR11 | Nhân viên vận hành xem và quản lý thông tin khách hàng. |
+| BR32 | 🟢 | FR11 | Nhân viên vận hành quản lý thông tin tài xế và phương tiện. |
+| BR33 | 🟢 | FR11 | Nhân viên vận hành xem và theo dõi các chuyến đang diễn ra. |
+| BR34 | 🟢 | FR11 | Nhân viên vận hành xem và hỗ trợ xử lý các chuyến bị lỗi. |
+| BR35 | 🟢 | FR12 | Cung cấp báo cáo số lượng chuyến, doanh thu, tỷ lệ hoàn thành/hủy. |
+| BR36 | 🟢 | FR12 | Cung cấp báo cáo về hiệu quả hoạt động và đánh giá tài xế. |
+| BR37 | 🟢 | FR01 | Xác thực người dùng trước khi sử dụng chức năng yêu cầu tài khoản. |
+| BR38 | 🟢 | FR13 | Kiểm tra quyền của người dùng trước khi thực hiện thao tác quản trị. |
+| BR39 | 🟢 | FR13 | Kiểm soát quyền truy cập đối với dữ liệu cá nhân, phương tiện, vị trí, giao dịch. |
+| BR40 | 🟢 | FR13 | Ghi nhận các thao tác quan trọng để phục vụ kiểm tra, xử lý sự cố. |
+| BR41 | 🔵 | FR11 | Hỗ trợ mở rộng hệ thống khi số lượng người dùng, tài xế, chuyến tăng. |
+| BR42 | 🟢* | FR09 | Đảm bảo lỗi ở thông báo/thanh toán không làm dừng toàn bộ quy trình đặt xe. |
+| BR43 | 🔵 | FR11 | Cho phép các chức năng/thành phần được triển khai, nâng cấp từng phần. |
+| BR44 | 🔵 | FR02 | Cho phép bổ sung loại xe/dịch vụ mới trong tương lai. |
+| BR45 | 🔵 | FR08 | Cho phép tích hợp thêm phương thức/nhà cung cấp thanh toán. |
+| BR46 | 🔵 | FR09 | Cho phép tích hợp thêm kênh/nhà cung cấp thông báo mới. |
 
 ## 4. Phân rã theo Business Process
 
@@ -668,7 +678,7 @@ BP07 – Quy trình thanh toán
 BP08 – Quy trình thông báo
 ├── BR26 – Thông báo trạng thái đặt xe                    → FR09
 ├── BR27 – Thông báo cho tài xế                           → FR09
-├── BR28 – Mở rộng kênh thông báo                         → FR09
+├── BR28 – Mở rộng kênh thông báo (🔵)                    → FR09
 └── BR42 – Đảm bảo tính độc lập của thành phần thông báo  → FR09
 
 BP09 – Quy trình đánh giá tài xế
@@ -695,9 +705,9 @@ BP12 – Quy trình bảo mật và phân quyền
 ├── BR39 – Bảo vệ dữ liệu                 → FR13
 └── BR40 – Lưu vết thao tác               → FR13
 
-BP13 – Nguyên tắc kiến trúc mở rộng 
+BP13 – Nguyên tắc kiến trúc mở rộng (🔵 — không phải hạng mục code trong 7 tuần)
 ├── BR41 – Đảm bảo khả năng mở rộng                → FR11
-├── BR42 – Đảm bảo tính độc lập của các thành phần → FR09 
+├── BR42 – Đảm bảo tính độc lập của các thành phần → FR09 (🟢 áp dụng như nguyên tắc code MVP)
 ├── BR43 – Hỗ trợ triển khai từng phần              → FR11
 ├── BR44 – Hỗ trợ mở rộng dịch vụ                   → FR02
 ├── BR45 – Hỗ trợ mở rộng phương thức thanh toán    → FR08
@@ -705,7 +715,10 @@ BP13 – Nguyên tắc kiến trúc mở rộng
 ```
 
 ---
+
 # B8. Kịch bản minh họa cho từng Business Goal (SC – Scenario)
+
+> **Không phải bộ mã BG mới.** Đây là các kịch bản minh họa (SC01–SC14) làm rõ điều kiện thành công của các BG chính thức ở B3. Tất cả đều thuộc phạm vi 🟢[MVP].
 
 | Mã SC | Gắn với BG | Tên kịch bản | Điều kiện minh họa |
 |---|---|---|---|
@@ -726,7 +739,7 @@ BP13 – Nguyên tắc kiến trúc mở rộng
 
 ---
 
-# B9. Mô hình hóa hệ thống – Mô hình dữ liệu
+# B9. Mô hình hóa hệ thống – Mô hình dữ liệu (🟢 toàn bộ thuộc MVP)
 
 ## 9.1. Các thực thể và thuộc tính
 
@@ -881,28 +894,30 @@ erDiagram
 
 # B10. Xác định Non-Functional Requirements (NFR)
 
-| Mã NFR | Nhóm | Non-Functional Requirement |
+> Nhãn 🟢/🔵 phân biệt NFR bắt buộc kiểm chứng trong MVP và NFR mang tính định hướng hạ tầng dài hạn.
+
+| Mã NFR | Nhóm | Nhãn | Non-Functional Requirement |
 |---|---|---|---|
-| NFR01 | Hiệu năng | Phản hồi các thao tác thông thường trong thời gian phù hợp, đặc biệt đặt xe và theo dõi chuyến. |
-| NFR02 | Hiệu năng | Xử lý đồng thời nhiều yêu cầu đặt xe/tìm tài xế trong giờ cao điểm (cần benchmark tải — không bắt buộc test tải đầy đủ trong MVP). |
-| NFR03 | Khả năng mở rộng | Mở rộng độc lập các thành phần khi số lượng KH/tài xế/chuyến tăng — nguyên tắc thiết kế, không phải deliverable MVP. |
-| NFR04 | Tính sẵn sàng | Duy trì hoạt động ổn định trong giờ cao điểm, hạn chế downtime cơ bản. |
-| NFR05 | Khả năng chịu lỗi | Lỗi tại thanh toán/thông báo không làm dừng toàn bộ hệ thống đặt xe (áp dụng bằng try-catch/async, không cần circuit breaker phức tạp). |
-| NFR06 | Khả năng phục hồi | Phục hồi và tiếp tục xử lý khi mất kết nối tạm thời (ở mức cơ bản: lưu trạng thái, đồng bộ lại). |
-| NFR07 | Bảo mật | Xác thực trước khi dùng chức năng yêu cầu tài khoản. |
-| NFR08 | Phân quyền | Kiểm soát quyền truy cập theo vai trò từng nhóm người dùng. |
-| NFR09 | Bảo mật dữ liệu | Bảo vệ thông tin cá nhân, phương tiện, vị trí, giao dịch khỏi truy cập trái phép. |
-| NFR10 | Bảo mật thanh toán | Không lưu trực tiếp thông tin nhạy cảm của thẻ/tài khoản thanh toán. |
-| NFR11 | Audit | Ghi log thao tác quản trị và thao tác quan trọng. |
-| NFR12 | Tin cậy dữ liệu | Dữ liệu chuyến, thanh toán, giao dịch lưu trữ chính xác, nhất quán. |
-| NFR13 | Tính mở rộng | Bổ sung dịch vụ/phương thức thanh toán/nhà cung cấp thông báo mới mà không xây lại toàn hệ thống. |
-| NFR14 | Khả năng bảo trì | Thành phần thiết kế độc lập để bảo trì/nâng cấp không ảnh hưởng chức năng khác. |
-| NFR15 | Khả năng triển khai | Hỗ trợ triển khai từng phần — thuộc quy trình CI/CD dài hạn, không bắt buộc MVP. |
-| NFR16 | Khả năng tương thích | Tích hợp được với nhà cung cấp bên ngoài (thanh toán, thông báo) — bắt buộc vì MVP cần chạy thật với Payment/Notification Provider. |
-| NFR17 | Mở rộng thông báo | Kiến trúc thông báo cho phép bổ sung kênh trong tương lai. |
-| NFR18 | Giám sát | Theo dõi trạng thái hoạt động, lỗi, chỉ số hệ thống — thuộc hạ tầng vận hành, không phải hạng mục code MVP. |
-| NFR19 | Sao lưu | Sao lưu dữ liệu quan trọng và phương án khôi phục — có thể dùng backup mặc định của DB, không cần xây hệ thống backup riêng trong MVP. |
-| NFR20 | Khả năng sử dụng | Giao diện dễ sử dụng, phù hợp từng nhóm người dùng (KH, tài xế, nhân viên). |
+| NFR01 | Hiệu năng | 🟢 | Phản hồi các thao tác thông thường trong thời gian phù hợp, đặc biệt đặt xe và theo dõi chuyến. |
+| NFR02 | Hiệu năng | 🔵 | Xử lý đồng thời nhiều yêu cầu đặt xe/tìm tài xế trong giờ cao điểm (cần benchmark tải — không bắt buộc test tải đầy đủ trong MVP). |
+| NFR03 | Khả năng mở rộng | 🔵 | Mở rộng độc lập các thành phần khi số lượng KH/tài xế/chuyến tăng — nguyên tắc thiết kế, không phải deliverable MVP. |
+| NFR04 | Tính sẵn sàng | 🟢 | Duy trì hoạt động ổn định trong giờ cao điểm, hạn chế downtime cơ bản. |
+| NFR05 | Khả năng chịu lỗi | 🟢 | Lỗi tại thanh toán/thông báo không làm dừng toàn bộ hệ thống đặt xe (áp dụng bằng try-catch/async, không cần circuit breaker phức tạp). |
+| NFR06 | Khả năng phục hồi | 🟢 | Phục hồi và tiếp tục xử lý khi mất kết nối tạm thời (ở mức cơ bản: lưu trạng thái, đồng bộ lại). |
+| NFR07 | Bảo mật | 🟢 | Xác thực trước khi dùng chức năng yêu cầu tài khoản. |
+| NFR08 | Phân quyền | 🟢 | Kiểm soát quyền truy cập theo vai trò từng nhóm người dùng. |
+| NFR09 | Bảo mật dữ liệu | 🟢 | Bảo vệ thông tin cá nhân, phương tiện, vị trí, giao dịch khỏi truy cập trái phép. |
+| NFR10 | Bảo mật thanh toán | 🟢 | Không lưu trực tiếp thông tin nhạy cảm của thẻ/tài khoản thanh toán. |
+| NFR11 | Audit | 🟢 | Ghi log thao tác quản trị và thao tác quan trọng. |
+| NFR12 | Tin cậy dữ liệu | 🟢 | Dữ liệu chuyến, thanh toán, giao dịch lưu trữ chính xác, nhất quán. |
+| NFR13 | Tính mở rộng | 🔵 | Bổ sung dịch vụ/phương thức thanh toán/nhà cung cấp thông báo mới mà không xây lại toàn hệ thống. |
+| NFR14 | Khả năng bảo trì | 🔵 | Thành phần thiết kế độc lập để bảo trì/nâng cấp không ảnh hưởng chức năng khác. |
+| NFR15 | Khả năng triển khai | 🔵 | Hỗ trợ triển khai từng phần — thuộc quy trình CI/CD dài hạn, không bắt buộc MVP. |
+| NFR16 | Khả năng tương thích | 🟢 | Tích hợp được với nhà cung cấp bên ngoài (thanh toán, thông báo) — bắt buộc vì MVP cần chạy thật với Payment/Notification Provider. |
+| NFR17 | Mở rộng thông báo | 🔵 | Kiến trúc thông báo cho phép bổ sung kênh trong tương lai. |
+| NFR18 | Giám sát | 🔵 | Theo dõi trạng thái hoạt động, lỗi, chỉ số hệ thống — thuộc hạ tầng vận hành, không phải hạng mục code MVP. |
+| NFR19 | Sao lưu | 🔵 | Sao lưu dữ liệu quan trọng và phương án khôi phục — có thể dùng backup mặc định của DB, không cần xây hệ thống backup riêng trong MVP. |
+| NFR20 | Khả năng sử dụng | 🟢 | Giao diện dễ sử dụng, phù hợp từng nhóm người dùng (KH, tài xế, nhân viên). |
 
 ---
 
@@ -1348,4 +1363,4 @@ BG (Business Goal – theo B3) → BR → FR → UC → AC
 - BR18, BR40 xuất hiện ở nhiều BG vì phục vụ đồng thời nhiều mục tiêu kinh doanh.
 - BG12 là mục tiêu bao trùm toàn dự án — ràng buộc phạm vi/thời gian cho toàn bộ BR còn lại.
 - **BG10, BG11 và các BR/NFR gắn nhãn 🔵** là nhóm "Định hướng kiến trúc" — bắt buộc phải **thiết kế đúng nguyên tắc** ngay từ đầu (để không phải viết lại hệ thống sau này), nhưng **không phải hạng mục chức năng phải hoàn thiện đầy đủ** trong 7 tuần MVP.
-- Ma trận cần được cập nhật liên tục khi có thay đổi yêu cầu hoặc làm rõ chính sách với khách hàng (xem B4.12). thông tin" ở B4.12).
+- Ma trận cần được cập nhật liên tục khi có thay đổi yêu cầu hoặc làm rõ chính sách với khách hàng (xem B4.12).
