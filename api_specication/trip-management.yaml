@@ -1,0 +1,242 @@
+openapi: 3.0.0
+info:
+  title: Trip Management API (FR05)
+  description: |
+    API phục vụ cho chức năng Quản lý chuyến đi (FR05). Bao gồm các thao tác cập nhật trạng thái chuyến đi thực tế, theo dõi chuyến và xử lý các sự cố hoặc hủy chuyến.
+
+    ### Yêu cầu nghiệp vụ (Business Requirements) được đáp ứng:
+    - **BR14**: Tạo, cập nhật, quản lý trạng thái chuyến từ đặt xe đến hoàn thành/hủy.
+    - **BR15**: Cho phép khách hàng theo dõi trạng thái và thông tin chuyến.
+    - **BR17**: Xử lý hủy chuyến, ghi nhận lý do, hỗ trợ xử lý chuyến bị lỗi.
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/nguyen-14e/account-management/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/api/v1
+  description: Local server
+security:
+- bearerAuth: []
+tags:
+- name: Trips
+  description: "Quản lý vòng đời và trạng thái của chuyến đi (BR14, BR15, BR17)"
+paths:
+  /trips/{tripId}:
+    get:
+      tags:
+      - Trips
+      summary: Lấy thông tin chi tiết và trạng thái hiện tại của chuyến đi
+      description: Khách hàng và tài xế sử dụng API này để theo dõi tiến trình của cuốc xe (BR15).
+      operationId: getTripById
+      parameters:
+      - name: tripId
+        in: path
+        description: ID của chuyến đi
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Thông tin chi tiết chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDetail"
+        "404":
+          description: Không tìm thấy chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /trips/{tripId}/status:
+    put:
+      tags:
+      - Trips
+      summary: Cập nhật trạng thái chuyến đi
+      description: "Tài xế gọi API này để chuyển đổi trạng thái thực tế: đang đón khách (picking_up), đã đến điểm đón (arrived), đang di chuyển (in_progress), hoàn thành (completed) (BR14)."
+      operationId: updateTripStatus
+      parameters:
+      - name: tripId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        description: Trạng thái mới cần cập nhật
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripStatusUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: Cập nhật trạng thái thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDetail"
+        "400":
+          description: Chuyển đổi trạng thái không hợp lệ theo luồng vòng đời chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /trips/{tripId}/cancel:
+    put:
+      tags:
+      - Trips
+      summary: Hủy chuyến đi
+      description: Cho phép khách hàng hoặc tài xế hủy chuyến đi đang diễn ra và bắt buộc ghi nhận lý do hủy (BR17).
+      operationId: cancelTrip
+      parameters:
+      - name: tripId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        description: Lý do hủy chuyến
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripCancelRequest"
+        required: true
+      responses:
+        "200":
+          description: Hủy chuyến thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDetail"
+        "400":
+          description: "Không thể hủy chuyến ở trạng thái hiện tại (VD: đã hoàn thành)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /trips/{tripId}/issues:
+    post:
+      tags:
+      - Trips
+      summary: Báo cáo sự cố trong chuyến đi
+      description: "Ghi nhận các sự cố bất thường (xe hỏng, tai nạn, khách hàng không xuất hiện) để bộ phận vận hành hỗ trợ xử lý chuyến bị lỗi (BR17)."
+      operationId: reportTripIssue
+      parameters:
+      - name: tripId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        description: Thông tin chi tiết về sự cố
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripIssueRequest"
+        required: true
+      responses:
+        "201":
+          description: Đã ghi nhận sự cố thành công
+        "404":
+          description: Không tìm thấy chuyến đi
+components:
+  schemas:
+    TripDetail:
+      required:
+      - booking_id
+      - customer_id
+      - driver_id
+      - id
+      - status
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        booking_id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        driver_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          description: Trạng thái hiện tại của chuyến đi
+          enum:
+          - driver_assigned
+          - picking_up
+          - arrived
+          - in_progress
+          - completed
+          - cancelled
+          - issue_reported
+        cancel_reason:
+          type: string
+          description: Lý do hủy chuyến (nếu trạng thái là cancelled)
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    TripStatusUpdateRequest:
+      required:
+      - status
+      type: object
+      properties:
+        status:
+          type: string
+          description: Trạng thái muốn chuyển sang
+          enum:
+          - picking_up
+          - arrived
+          - in_progress
+          - completed
+    TripCancelRequest:
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          type: string
+          description: "Mô tả lý do hủy chuyến (VD: Đợi quá lâu, tài xế yêu cầu hủy)"
+    TripIssueRequest:
+      required:
+      - description
+      - issue_type
+      type: object
+      properties:
+        issue_type:
+          type: string
+          description: Phân loại sự cố
+          enum:
+          - vehicle_breakdown
+          - accident
+          - customer_no_show
+          - other
+        description:
+          type: string
+          description: Mô tả chi tiết vấn đề đang gặp phải
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: TRIP_005
+        message:
+          type: string
+          example: "Chuyến đi này đã hoàn thành, không thể hủy."
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,177 @@
+openapi: 3.0.0
+info:
+  title: Notification Service API (FR09)
+  description: |
+    API phục vụ cho chức năng Thông báo (FR09). Quản lý việc gửi thông báo (Push Notification, SMS, Email) đến người dùng và tài xế theo các sự kiện của hệ thống.
+
+    ### Yêu cầu nghiệp vụ (Business Requirements) được đáp ứng:
+    - **BR12**: Thông báo khi hệ thống không tìm được tài xế phù hợp.
+    - **BR26**: Gửi thông báo theo các sự kiện quan trọng của chuyến (ví dụ: tài xế đã đến, chuyến đi hoàn thành).
+    - **BR27**: Gửi thông báo cho tài xế về chuyến mới và thay đổi liên quan.
+    - **BR28, BR46**: Hỗ trợ tích hợp thêm kênh/nhà cung cấp thông báo mới trong tương lai (Mở rộng linh hoạt).
+    - **BR42**: Đảm bảo lỗi ở thông báo không làm dừng quy trình đặt xe (Thiết kế API trả về 202 Accepted xử lý bất đồng bộ/Message Queue).
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/nguyen-14e/account-management/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/api/v1
+  description: Local server
+security:
+- bearerAuth: []
+tags:
+- name: Notifications
+  description: "Gửi, nhận và quản lý trạng thái thông báo (BR12, BR26, BR27, BR42)"
+paths:
+  /notifications/send:
+    post:
+      tags:
+      - Notifications
+      summary: Gửi thông báo đến người dùng hoặc tài xế
+      description: "Các service khác (như Đặt xe, Thanh toán) sẽ gọi API này để gửi thông báo. API được thiết kế theo hướng bất đồng bộ (trả về 202) để đảm bảo lỗi gửi thông báo không làm hỏng luồng nghiệp vụ chính (BR42). Hỗ trợ nhiều kênh gửi như Push, SMS, Email (BR28, BR46)."
+      operationId: sendNotification
+      requestBody:
+        description: Payload chứa nội dung và người nhận thông báo
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendNotificationRequest"
+        required: true
+      responses:
+        "202":
+          description: Yêu cầu gửi thông báo đã được tiếp nhận và đưa vào hàng đợi (Asynchronous processing)
+        "400":
+          description: Dữ liệu đầu vào không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /notifications:
+    get:
+      tags:
+      - Notifications
+      summary: Lấy danh sách thông báo của người dùng hiện tại
+      description: "App khách hàng hoặc app tài xế gọi API này để hiển thị lịch sử thông báo (BR12, BR26, BR27)."
+      operationId: getUserNotifications
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 20
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+      responses:
+        "200":
+          description: Danh sách thông báo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationResponse"
+  /notifications/{notificationId}/read:
+    put:
+      tags:
+      - Notifications
+      summary: Đánh dấu một thông báo là đã đọc
+      operationId: markNotificationAsRead
+      parameters:
+      - name: notificationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Đánh dấu đã đọc thành công
+        "404":
+          description: Không tìm thấy thông báo
+components:
+  schemas:
+    SendNotificationRequest:
+      required:
+      - body
+      - channels
+      - event_type
+      - recipient_id
+      - title
+      type: object
+      properties:
+        recipient_id:
+          type: string
+          description: ID của người dùng hoặc tài xế nhận thông báo
+          format: uuid
+        event_type:
+          type: string
+          description: "Loại sự kiện để kích hoạt template phù hợp (BR12, BR26, BR27)"
+          enum:
+          - no_driver_found
+          - new_trip
+          - trip_updated
+          - driver_arrived
+          - payment_failed
+        channels:
+          type: array
+          description: "Danh sách các kênh gửi. Hỗ trợ thêm các kênh mới dễ dàng (BR28, BR46)."
+          items:
+            type: string
+            enum:
+            - push
+            - sms
+            - email
+            - zalo
+        title:
+          type: string
+          description: Tiêu đề thông báo
+        body:
+          type: string
+          description: Nội dung chi tiết của thông báo
+        data:
+          type: object
+          additionalProperties: true
+          description: "Dữ liệu đính kèm (VD: trip_id) để app xử lý khi người dùng click vào thông báo"
+    NotificationResponse:
+      required:
+      - body
+      - created_at
+      - id
+      - is_read
+      - title
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body:
+          type: string
+        is_read:
+          type: boolean
+          default: false
+        created_at:
+          type: string
+          format: date-time
+        data:
+          type: object
+          additionalProperties: true
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: NOTIFY_001
+        message:
+          type: string
+          example: Người nhận không tồn tại hoặc thiết bị chưa đăng ký token Push.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

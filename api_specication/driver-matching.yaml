@@ -1,0 +1,179 @@
+openapi: 3.0.0
+info:
+  title: Driver Matching API (FR03)
+  description: |
+    API phục vụ cho chức năng Tìm tài xế (FR03) của hệ thống. Quá trình này thường được hệ thống (Backend/Matchmaking Engine) gọi tự động hoặc dùng để truy vấn danh sách tài xế tiềm năng.
+
+    ### Yêu cầu nghiệp vụ (Business Requirements) được đáp ứng:
+    - **BR09**: Xác định và tìm tài xế phù hợp dựa trên vị trí, trạng thái, loại xe.
+    - **BR10**: Ưu tiên tài xế phù hợp và gần khách hàng theo tiêu chí vận hành (khoảng cách, đánh giá, tỷ lệ nhận chuyến).
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/nguyen-14e/account-management/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/api/v1
+  description: Local server
+security:
+- bearerAuth: []
+tags:
+- name: Matchmaking
+  description: "Các API phục vụ việc tìm kiếm và xếp hạng tài xế phù hợp (BR09, BR10)"
+paths:
+  /drivers/nearby:
+    get:
+      tags:
+      - Matchmaking
+      summary: Lấy danh sách tài xế phù hợp xung quanh một vị trí
+      description: "API truy vấn các tài xế đang \"sẵn sàng\", có loại xe phù hợp, nằm trong bán kính quy định và được sắp xếp theo mức độ ưu tiên (khoảng cách, điểm đánh giá)."
+      operationId: findNearbyDrivers
+      parameters:
+      - name: latitude
+        in: query
+        description: Vĩ độ của điểm đón khách
+        required: true
+        schema:
+          type: number
+          format: double
+      - name: longitude
+        in: query
+        description: Kinh độ của điểm đón khách
+        required: true
+        schema:
+          type: number
+          format: double
+      - name: vehicle_type_id
+        in: query
+        description: "Loại xe yêu cầu (VD. \"BIKE\", \"CAR_4\")"
+        required: true
+        schema:
+          type: string
+      - name: radius
+        in: query
+        description: "Bán kính tìm kiếm (tính bằng km, mặc định là 3km)"
+        required: false
+        schema:
+          type: number
+          default: 3
+      - name: limit
+        in: query
+        description: Giới hạn số lượng tài xế trả về (để tối ưu hệ thống)
+        required: false
+        schema:
+          type: integer
+          default: 5
+      responses:
+        "200":
+          description: Danh sách tài xế tiềm năng đã được sắp xếp độ ưu tiên
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DriverCandidate"
+        "400":
+          description: Thiếu hoặc sai định dạng tham số truyền vào
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /matchmaking/bookings/{bookingId}/start:
+    post:
+      tags:
+      - Matchmaking
+      summary: Bắt đầu tiến trình tự động tìm và phát yêu cầu cho tài xế
+      description: API kích hoạt Matchmaking Engine để liên tục quét và gửi tín hiệu đến các tài xế tốt nhất (được lấy từ API /drivers/nearby) cho một cuốc xe cụ thể.
+      operationId: startMatchmaking
+      parameters:
+      - name: bookingId
+        in: path
+        description: ID của yêu cầu đặt xe cần tìm tài xế
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "202":
+          description: Tiến trình tìm kiếm tài xế đã được bắt đầu (Xử lý bất đồng bộ)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchmakingStatus"
+        "404":
+          description: Không tìm thấy yêu cầu đặt xe (Booking)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Chuyến đi này đã có tài xế hoặc đã bị hủy
+components:
+  schemas:
+    DriverCandidate:
+      required:
+      - distance_km
+      - driver_id
+      - priority_score
+      - vehicle_type_id
+      type: object
+      properties:
+        driver_id:
+          type: string
+          description: ID của tài xế
+          format: uuid
+        vehicle_type_id:
+          type: string
+          description: Loại xe tài xế đang lái
+        distance_km:
+          type: number
+          description: Khoảng cách đường chim bay / đường bộ từ tài xế đến điểm đón
+          format: float
+        eta_minutes:
+          type: integer
+          description: Thời gian dự kiến để tài xế di chuyển đến điểm đón (phút)
+        priority_score:
+          type: number
+          description: "Điểm ưu tiên do thuật toán tính (dựa trên khoảng cách, rating, tỷ lệ hoàn thành chuyến)"
+          format: float
+        current_location:
+          type: object
+          properties:
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+    MatchmakingStatus:
+      required:
+      - booking_id
+      - started_at
+      - status
+      type: object
+      properties:
+        booking_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          description: Trạng thái tìm kiếm tài xế cho chuyến đi
+          enum:
+          - searching
+          - driver_found
+          - timeout
+        started_at:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: MATCH_001
+        message:
+          type: string
+          example: Không tìm thấy tài xế nào phù hợp trong khu vực.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

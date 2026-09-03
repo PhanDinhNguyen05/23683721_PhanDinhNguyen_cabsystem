@@ -1,0 +1,318 @@
+openapi: 3.0.0
+info:
+  title: Operation Management API (FR11)
+  description: |
+    API phục vụ cho chức năng Quản lý vận hành (FR11). Dành riêng cho nhân viên vận hành (Admin/Operator) để quản lý toàn diện khách hàng, tài xế, phương tiện và theo dõi/xử lý các sự cố chuyến đi.
+
+    ### Yêu cầu nghiệp vụ (Business Requirements) được đáp ứng:
+    - **BR03**: Thêm, sửa, xem và quản lý thông tin phương tiện.
+    - **BR05**: Cập nhật và theo dõi trạng thái hoạt động, sẵn sàng nhận chuyến của tài xế.
+    - **BR31**: Nhân viên vận hành xem và quản lý thông tin khách hàng.
+    - **BR32**: Nhân viên vận hành quản lý thông tin tài xế và phương tiện.
+    - **BR33**: Nhân viên vận hành xem và theo dõi các chuyến đang diễn ra.
+    - **BR34**: Nhân viên vận hành xem và hỗ trợ xử lý các chuyến bị lỗi.
+    - **BR41**: Hỗ trợ mở rộng hệ thống (Áp dụng phân trang Pagination cho toàn bộ API danh sách).
+    - **BR43**: Cho phép triển khai, nâng cấp từng phần (Module Admin độc lập).
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/nguyen-14e/account-management/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/api/v1/admin
+  description: Admin Server (Internal Network)
+security:
+- bearerAuth: []
+tags:
+- name: User Management
+  description: "Quản lý hồ sơ Khách hàng và Tài xế (BR31, BR32, BR05)"
+- name: Vehicle Management
+  description: "Quản lý danh mục phương tiện (BR03, BR32)"
+- name: Trip Monitoring
+  description: "Theo dõi chuyến đi và xử lý sự cố (BR33, BR34)"
+paths:
+  /users:
+    get:
+      tags:
+      - User Management
+      summary: Lấy danh sách khách hàng hoặc tài xế
+      description: "Nhân viên vận hành xem danh sách người dùng trong hệ thống. Hỗ trợ lọc theo vai trò (customer/driver) và phân trang (BR31, BR32, BR41)."
+      operationId: getAdminUsers
+      parameters:
+      - name: role
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - customer
+          - driver
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - active
+          - inactive
+          - suspended
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 20
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+      responses:
+        "200":
+          description: Danh sách người dùng
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserProfile"
+  /drivers/{driverId}/status:
+    put:
+      tags:
+      - User Management
+      summary: Thay đổi trạng thái hoạt động của tài xế
+      description: "Nhân viên vận hành có thể can thiệp khóa tài khoản hoặc buộc đổi trạng thái (VD: từ online sang offline) khi có vi phạm (BR05, BR32)."
+      operationId: updateDriverStatusAdmin
+      parameters:
+      - name: driverId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/driverId_status_body"
+        required: true
+      responses:
+        "200":
+          description: Cập nhật thành công
+  /vehicles:
+    post:
+      tags:
+      - Vehicle Management
+      summary: Thêm phương tiện mới vào hệ thống
+      description: "Đăng ký xe mới và gán cho tài xế (BR03, BR32)."
+      operationId: createVehicle
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleRequest"
+        required: true
+      responses:
+        "201":
+          description: Thêm phương tiện thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VehicleDetail"
+  /vehicles/{vehicleId}:
+    put:
+      tags:
+      - Vehicle Management
+      summary: Cập nhật thông tin phương tiện
+      operationId: updateVehicle
+      parameters:
+      - name: vehicleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleRequest"
+        required: true
+      responses:
+        "200":
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VehicleDetail"
+  /trips:
+    get:
+      tags:
+      - Trip Monitoring
+      summary: Lấy danh sách các chuyến đi (đang diễn ra hoặc có lỗi)
+      description: Bộ lọc giúp Admin theo dõi các chuyến đi thời gian thực (BR33) hoặc lọc các chuyến đang báo lỗi để xử lý (BR34).
+      operationId: getAdminTrips
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - in_progress
+          - issue_reported
+          - completed
+          - cancelled
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+      responses:
+        "200":
+          description: Danh sách chuyến đi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminTripView"
+  /trips/{tripId}/resolve:
+    put:
+      tags:
+      - Trip Monitoring
+      summary: Xử lý chuyến đi bị lỗi
+      description: "Nhân viên vận hành ghi nhận kết quả xử lý sự cố (VD: gọi điện hỗ trợ, đền bù, hủy chuyến ngang) cho các chuyến có trạng thái 'issue_reported' (BR34)."
+      operationId: resolveTripIssue
+      parameters:
+      - name: tripId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/tripId_resolve_body"
+        required: true
+      responses:
+        "200":
+          description: Đã xử lý sự cố thành công
+components:
+  schemas:
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        is_online:
+          type: boolean
+          description: Trạng thái sẵn sàng (chỉ áp dụng cho tài xế)
+          nullable: true
+    VehicleRequest:
+      required:
+      - brand
+      - driver_id
+      - license_plate
+      - model
+      - vehicle_type_id
+      type: object
+      properties:
+        driver_id:
+          type: string
+          format: uuid
+        license_plate:
+          type: string
+          description: Biển số xe
+        brand:
+          type: string
+          description: "Hãng xe (VD: Honda, Toyota)"
+        model:
+          type: string
+          description: "Dòng xe (VD: Vios, AirBlade)"
+        color:
+          type: string
+        vehicle_type_id:
+          type: string
+    VehicleDetail:
+      allOf:
+      - $ref: "#/components/schemas/VehicleRequest"
+      - type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+          created_at:
+            type: string
+            format: date-time
+    AdminTripView:
+      required:
+      - status
+      - trip_id
+      type: object
+      properties:
+        trip_id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        driver_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        issue_reason:
+          type: string
+          description: Lý do sự cố nếu chuyến đi bị lỗi
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: ADMIN_001
+        message:
+          type: string
+          example: Bạn không có quyền thực hiện thao tác này.
+    driverId_status_body:
+      type: object
+      properties:
+        is_online:
+          type: boolean
+        account_status:
+          type: string
+          enum:
+          - active
+          - suspended
+    tripId_resolve_body:
+      type: object
+      properties:
+        resolution_note:
+          type: string
+          description: "Ghi chú cách giải quyết (VD: Đã hoàn tiền cho khách, đã điều xe khác)"
+        action:
+          type: string
+          enum:
+          - mark_as_completed
+          - force_cancel
+          - refund_created
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

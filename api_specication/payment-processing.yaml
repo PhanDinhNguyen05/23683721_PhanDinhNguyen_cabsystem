@@ -1,0 +1,219 @@
+openapi: 3.0.0
+info:
+  title: Payment Processing API (FR08)
+  description: |
+    API phục vụ cho chức năng Thanh toán (FR08). Chịu trách nhiệm xử lý các giao dịch bằng tiền mặt hoặc thanh toán điện tử, tích hợp cổng thanh toán và quản lý trạng thái giao dịch.
+
+    ### Yêu cầu nghiệp vụ (Business Requirements) được đáp ứng:
+    - **BR20**: Hỗ trợ lựa chọn và ghi nhận thanh toán bằng tiền mặt.
+    - **BR21**: Tích hợp nhà cung cấp thanh toán bên ngoài để xử lý thanh toán điện tử.
+    - **BR22**: Ghi nhận và cập nhật trạng thái giao dịch thanh toán thành công/thất bại.
+    - **BR23**: Thông báo thất bại và cho phép thanh toán lại theo chính sách.
+    - **BR24**: Không lưu trực tiếp thông tin nhạy cảm của thẻ/tài khoản (Sử dụng redirect URL hoặc Token hóa).
+    - **BR45**: Cho phép tích hợp thêm phương thức/nhà cung cấp thanh toán mới.
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/nguyen-14e/account-management/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/api/v1
+  description: Local server
+security:
+- bearerAuth: []
+tags:
+- name: Payment Methods
+  description: Quản lý danh sách phương thức thanh toán (BR45)
+- name: Payments
+  description: "Khởi tạo và xử lý giao dịch thanh toán (BR20, BR21, BR22, BR23, BR24)"
+paths:
+  /payment-methods:
+    get:
+      tags:
+      - Payment Methods
+      summary: Lấy danh sách các phương thức thanh toán khả dụng
+      description: "Trả về danh sách các phương thức (Tiền mặt, VNPay, Momo, ZaloPay, Thẻ tín dụng, v.v.). Giúp UI hiển thị linh hoạt khi thêm cổng thanh toán mới (BR45)."
+      operationId: getPaymentMethods
+      responses:
+        "200":
+          description: Danh sách phương thức thanh toán
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaymentMethod"
+  /payments:
+    post:
+      tags:
+      - Payments
+      summary: Khởi tạo giao dịch thanh toán cho chuyến đi
+      description: "Tạo yêu cầu thanh toán. Nếu là tiền mặt (BR20), trạng thái có thể là success ngay (hoặc pending chờ tài xế xác nhận). Nếu là điện tử (BR21), trả về URL để client redirect sang cổng thanh toán (không lưu số thẻ - BR24)."
+      operationId: createPayment
+      requestBody:
+        description: Thông tin khởi tạo thanh toán
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentRequest"
+        required: true
+      responses:
+        "201":
+          description: Yêu cầu thanh toán được tạo thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "400":
+          description: Dữ liệu không hợp lệ hoặc chuyến đi đã được thanh toán
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /payments/webhook:
+    post:
+      tags:
+      - Payments
+      summary: Nhận trạng thái thanh toán từ đối tác thứ 3 (Webhook)
+      description: "Cổng thanh toán (Momo, VNPay, Stripe...) sẽ gọi API này để báo kết quả thanh toán thành công hay thất bại. Hệ thống cập nhật trạng thái vào DB (BR22)."
+      operationId: paymentWebhook
+      requestBody:
+        description: Payload từ cổng thanh toán trả về
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+        required: true
+      responses:
+        "200":
+          description: Ghi nhận trạng thái thành công
+      security: []
+  /payments/{paymentId}/retry:
+    post:
+      tags:
+      - Payments
+      summary: Thực hiện thanh toán lại nếu giao dịch trước đó thất bại
+      description: Cho phép khách hàng thử thanh toán lại hoặc chọn phương thức thanh toán khác nếu giao dịch điện tử bị lỗi (BR23).
+      operationId: retryPayment
+      parameters:
+      - name: paymentId
+        in: path
+        description: ID của giao dịch đã thất bại
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        description: Khách hàng có thể đổi phương thức thanh toán mới
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/paymentId_retry_body"
+        required: false
+      responses:
+        "200":
+          description: "Yêu cầu thanh toán lại thành công, trả về URL thanh toán mới"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "400":
+          description: Giao dịch này không ở trạng thái failed nên không thể retry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    PaymentMethod:
+      required:
+      - id
+      - name
+      - type
+      type: object
+      properties:
+        id:
+          type: string
+          example: MOMO_WALLET
+        name:
+          type: string
+          example: Ví MoMo
+        type:
+          type: string
+          enum:
+          - cash
+          - e_wallet
+          - credit_card
+          - bank_transfer
+        is_active:
+          type: boolean
+          default: true
+    PaymentRequest:
+      required:
+      - amount
+      - payment_method_id
+      - trip_id
+      type: object
+      properties:
+        trip_id:
+          type: string
+          format: uuid
+        payment_method_id:
+          type: string
+          description: ID của phương thức thanh toán (lấy từ /payment-methods)
+        amount:
+          type: number
+          description: Số tiền cần thanh toán
+          format: float
+        currency:
+          type: string
+          default: VND
+    PaymentResponse:
+      required:
+      - id
+      - status
+      - trip_id
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID của giao dịch thanh toán trên hệ thống
+          format: uuid
+        trip_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          description: Trạng thái thanh toán
+          enum:
+          - pending
+          - success
+          - failed
+          - refunded
+        payment_url:
+          type: string
+          description: URL redirect để khách hàng hoàn tất thanh toán (Nếu là tiền mặt thì trả về null)
+          format: uri
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: PAY_003
+        message:
+          type: string
+          example: "Thẻ không đủ số dư, vui lòng thử lại bằng phương thức khác."
+    paymentId_retry_body:
+      type: object
+      properties:
+        new_payment_method_id:
+          type: string
+          description: Đổi phương thức khác (VD đổi từ thẻ sang tiền mặt)
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,189 @@
+openapi: 3.0.0
+info:
+  title: Reporting and Analytics API (FR12)
+  description: |
+    API phục vụ cho chức năng Báo cáo (FR12). Cung cấp các số liệu thống kê về hệ thống, doanh thu, và hiệu suất của tài xế.
+
+    ### Yêu cầu nghiệp vụ (Business Requirements) được đáp ứng:
+    - **BR35**: Cung cấp báo cáo số lượng chuyến, doanh thu, tỷ lệ hoàn thành/hủy.
+    - **BR36**: Cung cấp báo cáo về hiệu quả hoạt động và đánh giá tài xế.
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/nguyen-14e/account-management/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/api/v1
+  description: Local server
+security:
+- bearerAuth: []
+tags:
+- name: Reports
+  description: "Truy xuất các báo cáo và thống kê (BR35, BR36)"
+paths:
+  /reports/trips-overview:
+    get:
+      tags:
+      - Reports
+      summary: Lấy báo cáo tổng quan về số chuyến đi và doanh thu
+      description: "Admin sử dụng API này để xem tổng số chuyến, tổng doanh thu, tỷ lệ hoàn thành và tỷ lệ hủy trong một khoảng thời gian nhất định (BR35)."
+      operationId: getTripsOverviewReport
+      parameters:
+      - name: start_date
+        in: query
+        description: Ngày bắt đầu lấy báo cáo (Định dạng YYYY-MM-DD)
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: end_date
+        in: query
+        description: Ngày kết thúc lấy báo cáo (Định dạng YYYY-MM-DD)
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: Dữ liệu báo cáo tổng quan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripsOverviewReport"
+        "400":
+          description: Dữ liệu ngày tháng không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /reports/drivers-performance:
+    get:
+      tags:
+      - Reports
+      summary: Lấy báo cáo hiệu suất hoạt động của tài xế
+      description: "Đánh giá KPI của tài xế thông qua tỷ lệ nhận chuyến, tỷ lệ hoàn thành và điểm đánh giá trung bình. Admin có thể xem toàn bộ hoặc lọc theo một tài xế cụ thể (BR36)."
+      operationId: getDriversPerformanceReport
+      parameters:
+      - name: driver_id
+        in: query
+        description: Truyền vào nếu chỉ muốn xem báo cáo của 1 tài xế cụ thể
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: start_date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: end_date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 20
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+      responses:
+        "200":
+          description: Danh sách hiệu suất tài xế
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DriverPerformanceReport"
+components:
+  schemas:
+    TripsOverviewReport:
+      required:
+      - cancellation_rate
+      - cancelled_trips
+      - completed_trips
+      - completion_rate
+      - total_revenue
+      - total_trips
+      type: object
+      properties:
+        total_trips:
+          type: integer
+          description: Tổng số chuyến đi được tạo
+        completed_trips:
+          type: integer
+          description: Số chuyến đi hoàn thành
+        cancelled_trips:
+          type: integer
+          description: Số chuyến đi bị hủy
+        completion_rate:
+          type: number
+          description: Tỷ lệ hoàn thành (tính theo %)
+          format: float
+        cancellation_rate:
+          type: number
+          description: Tỷ lệ hủy chuyến (tính theo %)
+          format: float
+        total_revenue:
+          type: number
+          description: Tổng doanh thu từ các chuyến đi thành công
+          format: double
+        currency:
+          type: string
+          default: VND
+    DriverPerformanceReport:
+      required:
+      - acceptance_rate
+      - accepted_trips
+      - average_rating
+      - completed_trips
+      - completion_rate
+      - driver_id
+      - total_assigned_trips
+      type: object
+      properties:
+        driver_id:
+          type: string
+          format: uuid
+        total_assigned_trips:
+          type: integer
+          description: Tổng số cuốc xe được hệ thống phân công
+        accepted_trips:
+          type: integer
+          description: Số cuốc xe tài xế chấp nhận
+        acceptance_rate:
+          type: number
+          description: Tỷ lệ chấp nhận chuyến (%)
+          format: float
+        completed_trips:
+          type: integer
+          description: Số cuốc xe đã hoàn thành
+        completion_rate:
+          type: number
+          description: Tỷ lệ hoàn thành trên tổng số chuyến đã nhận (%)
+          format: float
+        average_rating:
+          type: number
+          description: Điểm đánh giá trung bình trong khoảng thời gian này
+          format: float
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: REPORT_001
+        message:
+          type: string
+          example: Khoảng thời gian báo cáo không được vượt quá 90 ngày.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,185 @@
+openapi: 3.0.0
+info:
+  title: Driver Rating API (FR10)
+  description: |
+    API phục vụ cho chức năng Đánh giá tài xế (FR10). Cho phép khách hàng gửi đánh giá sau chuyến đi và hệ thống lưu trữ, thống kê phản hồi.
+
+    ### Yêu cầu nghiệp vụ (Business Requirements) được đáp ứng:
+    - **BR29**: Cho phép khách hàng đánh giá và nhận xét tài xế sau khi hoàn thành chuyến.
+    - **BR30**: Lưu và quản lý dữ liệu đánh giá, phản hồi của khách hàng.
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/nguyen-14e/account-management/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/api/v1
+  description: Local server
+security:
+- bearerAuth: []
+tags:
+- name: Reviews
+  description: "Quản lý đánh giá và phản hồi của khách hàng (BR29, BR30)"
+paths:
+  /trips/{tripId}/reviews:
+    post:
+      tags:
+      - Reviews
+      summary: Gửi đánh giá cho tài xế sau khi hoàn thành chuyến
+      description: Khách hàng gọi API này để chấm điểm (1-5 sao) và để lại nhận xét cho tài xế. Chỉ được phép đánh giá khi chuyến đi đã ở trạng thái completed (BR29).
+      operationId: submitTripReview
+      parameters:
+      - name: tripId
+        in: path
+        description: ID của chuyến đi đã hoàn thành
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        description: Thông tin đánh giá từ khách hàng
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewRequest"
+        required: true
+      responses:
+        "201":
+          description: Đánh giá được lưu thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewResponse"
+        "400":
+          description: Chuyến đi chưa hoàn thành hoặc đã được đánh giá trước đó
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Khách hàng không có quyền đánh giá chuyến đi của người khác
+  /drivers/{driverId}/reviews:
+    get:
+      tags:
+      - Reviews
+      summary: Lấy danh sách đánh giá và điểm trung bình của tài xế
+      description: Hệ thống hoặc người dùng có thể xem lịch sử các phản hồi và điểm rating tổng quan của một tài xế cụ thể (BR30).
+      operationId: getDriverReviews
+      parameters:
+      - name: driverId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 10
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+      responses:
+        "200":
+          description: Thống kê đánh giá và danh sách nhận xét
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverReviewSummary"
+        "404":
+          description: Không tìm thấy tài xế
+components:
+  schemas:
+    ReviewRequest:
+      required:
+      - rating
+      type: object
+      properties:
+        rating:
+          maximum: 5
+          minimum: 1
+          type: integer
+          description: Điểm đánh giá từ 1 đến 5 sao
+        comment:
+          maxLength: 500
+          type: string
+          description: Nhận xét chi tiết của khách hàng
+          nullable: true
+        feedback_tags:
+          type: array
+          description: "Các tag phản hồi nhanh (VD: 'Lái xe cẩn thận', 'Xe sạch sẽ', 'Thái độ không tốt')"
+          items:
+            type: string
+    ReviewResponse:
+      required:
+      - created_at
+      - customer_id
+      - driver_id
+      - id
+      - rating
+      - trip_id
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        trip_id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        driver_id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+        comment:
+          type: string
+          nullable: true
+        feedback_tags:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+    DriverReviewSummary:
+      required:
+      - average_rating
+      - driver_id
+      - reviews
+      - total_reviews
+      type: object
+      properties:
+        driver_id:
+          type: string
+          format: uuid
+        average_rating:
+          type: number
+          description: Điểm đánh giá trung bình
+          format: float
+        total_reviews:
+          type: integer
+          description: Tổng số lượt đánh giá
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReviewResponse"
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: REVIEW_002
+        message:
+          type: string
+          example: Bạn chỉ có thể đánh giá chuyến đi sau khi đã hoàn thành.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

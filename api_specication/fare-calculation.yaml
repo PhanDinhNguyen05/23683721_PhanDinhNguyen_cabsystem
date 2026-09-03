@@ -1,0 +1,180 @@
+openapi: 3.0.0
+info:
+  title: Fare Calculation API (FR07)
+  description: |
+    API phục vụ cho chức năng Tính cước (FR07). Đảm nhiệm việc tính toán số tiền khách hàng phải trả cho một chuyến đi, bao gồm cả tính cước dự kiến trước khi đặt xe và cước thực tế sau khi hoàn thành chuyến.
+
+    ### Yêu cầu nghiệp vụ (Business Requirements) được đáp ứng:
+    - **BR19**: Tính số tiền khách hàng phải trả dựa trên loại dịch vụ và thông tin chuyến.
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/nguyen-14e/account-management/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/api/v1
+  description: Local server
+security:
+- bearerAuth: []
+tags:
+- name: Fares
+  description: Các API liên quan đến tính toán cước phí chuyến đi (BR19)
+paths:
+  /fares/estimate:
+    post:
+      tags:
+      - Fares
+      summary: Tính cước phí dự kiến
+      description: "Hệ thống nhận điểm đón, điểm đến và loại xe để trả về mức giá dự kiến (Estimated Fare) cho khách hàng trước khi họ quyết định nhấn đặt xe (BR19)."
+      operationId: estimateFare
+      requestBody:
+        description: Thông tin cần thiết để tính cước dự kiến
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FareEstimateRequest"
+        required: true
+      responses:
+        "200":
+          description: Tính cước thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FareEstimateResponse"
+        "400":
+          description: Dữ liệu đầu vào không hợp lệ hoặc khoảng cách quá xa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /trips/{tripId}/fare:
+    get:
+      tags:
+      - Fares
+      summary: Lấy chi tiết cước phí thực tế của chuyến đi
+      description: "API này được gọi khi chuyến đi hoàn thành. Hệ thống sẽ tính toán lại giá trị thực tế dựa trên lộ trình chạy thực, thời gian chờ, phí cầu đường và các mã khuyến mãi (BR19)."
+      operationId: getTripFare
+      parameters:
+      - name: tripId
+        in: path
+        description: ID của chuyến đi
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Chi tiết cước phí cuối cùng của chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripFareResponse"
+        "404":
+          description: Không tìm thấy chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    LocationBase:
+      required:
+      - latitude
+      - longitude
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+    FareEstimateRequest:
+      required:
+      - dropoff_location
+      - pickup_location
+      - vehicle_type_id
+      type: object
+      properties:
+        pickup_location:
+          $ref: "#/components/schemas/LocationBase"
+        dropoff_location:
+          $ref: "#/components/schemas/LocationBase"
+        vehicle_type_id:
+          type: string
+          description: Mã loại xe muốn đặt
+        promotion_code:
+          type: string
+          description: Mã khuyến mãi (nếu có)
+          nullable: true
+    FareEstimateResponse:
+      required:
+      - estimated_distance_km
+      - estimated_duration_minutes
+      - estimated_fare
+      - vehicle_type_id
+      type: object
+      properties:
+        vehicle_type_id:
+          type: string
+        estimated_distance_km:
+          type: number
+          description: Khoảng cách dự kiến (km)
+          format: float
+        estimated_duration_minutes:
+          type: integer
+          description: Thời gian di chuyển dự kiến (phút)
+        estimated_fare:
+          type: number
+          description: Số tiền cước dự kiến
+        currency:
+          type: string
+          description: Loại tiền tệ
+          default: VND
+    TripFareResponse:
+      required:
+      - base_fare
+      - discount_amount
+      - distance_fare
+      - time_fare
+      - tolls_and_surcharges
+      - total_fare
+      - trip_id
+      type: object
+      properties:
+        trip_id:
+          type: string
+          format: uuid
+        base_fare:
+          type: number
+          description: Giá mở cửa / Giá cơ bản
+        distance_fare:
+          type: number
+          description: Số tiền tính theo chiều dài quãng đường thực tế
+        time_fare:
+          type: number
+          description: Số tiền tính theo thời gian di chuyển/chờ thực tế
+        tolls_and_surcharges:
+          type: number
+          description: "Phí cầu đường, phụ phí thời tiết hoặc giờ cao điểm"
+        discount_amount:
+          type: number
+          description: Số tiền được giảm giá (nếu áp dụng mã khuyến mãi)
+        total_fare:
+          type: number
+          description: Tổng số tiền khách hàng phải trả cuối cùng
+        currency:
+          type: string
+          default: VND
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: FARE_001
+        message:
+          type: string
+          example: Không thể tính cước do lộ trình vượt quá giới hạn phục vụ.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

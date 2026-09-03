@@ -1,0 +1,154 @@
+openapi: 3.0.0
+info:
+  title: Location Tracking API (FR06)
+  description: |
+    API phục vụ cho chức năng Theo dõi vị trí (FR06). Chịu trách nhiệm cập nhật vị trí thời gian thực của tài xế và cung cấp thông tin thời gian dự kiến đến nơi (ETA) cho khách hàng.
+
+    ### Yêu cầu nghiệp vụ (Business Requirements) được đáp ứng:
+    - **BR06**: Cập nhật, lưu, theo dõi vị trí tài xế phục vụ tìm xe và ETA.
+    - **BR16**: Xác định và hiển thị ETA tài xế đến điểm đón.
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/nguyen-14e/account-management/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/api/v1
+  description: Local server
+security:
+- bearerAuth: []
+tags:
+- name: Tracking
+  description: "Cập nhật tọa độ và tính toán ETA (BR06, BR16)"
+paths:
+  /tracking/drivers/{driverId}/location:
+    put:
+      tags:
+      - Tracking
+      summary: Cập nhật vị trí hiện tại của tài xế
+      description: "App tài xế gọi API này liên tục (VD: mỗi 5-10 giây) để gửi tọa độ mới nhất về hệ thống, phục vụ cho việc tìm tài xế gần đây và hiển thị cho khách hàng (BR06)."
+      operationId: updateDriverLocation
+      parameters:
+      - name: driverId
+        in: path
+        description: ID của tài xế
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        description: Tọa độ mới nhất của tài xế
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocationUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: Cập nhật vị trí thành công (Thường trả về rỗng để tối ưu băng thông)
+        "400":
+          description: Dữ liệu tọa độ không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /tracking/trips/{tripId}:
+    get:
+      tags:
+      - Tracking
+      summary: Lấy vị trí tài xế và ETA của chuyến đi
+      description: Khách hàng gọi API này (hoặc nhận qua WebSocket/SSE) để biết tài xế đang ở đâu và còn bao lâu nữa sẽ đến điểm đón hoặc điểm đến (BR16).
+      operationId: getTripTracking
+      parameters:
+      - name: tripId
+        in: path
+        description: ID của chuyến đi đang diễn ra
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Thông tin vị trí và thời gian dự kiến (ETA)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackingResponse"
+        "404":
+          description: Không tìm thấy chuyến đi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    LocationUpdateRequest:
+      required:
+      - latitude
+      - longitude
+      type: object
+      properties:
+        latitude:
+          type: number
+          description: Vĩ độ hiện tại
+          format: double
+        longitude:
+          type: number
+          description: Kinh độ hiện tại
+          format: double
+        heading:
+          type: number
+          description: Hướng di chuyển của xe (từ 0 đến 360 độ) phục vụ hiển thị icon xe trên bản đồ
+          format: float
+        speed:
+          type: number
+          description: Tốc độ hiện tại (m/s hoặc km/h)
+          format: float
+    TrackingResponse:
+      required:
+      - distance_meters
+      - driver_location
+      - eta_seconds
+      - last_updated
+      - trip_id
+      type: object
+      properties:
+        trip_id:
+          type: string
+          format: uuid
+        driver_location:
+          $ref: "#/components/schemas/TrackingResponse_driver_location"
+        eta_seconds:
+          type: integer
+          description: Thời gian dự kiến tài xế đến nơi (tính bằng giây)
+        distance_meters:
+          type: number
+          description: Khoảng cách còn lại (tính bằng mét)
+        last_updated:
+          type: string
+          description: Thời điểm cập nhật tọa độ cuối cùng
+          format: date-time
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: TRACKING_001
+        message:
+          type: string
+          example: Không thể lấy thông tin định vị lúc này.
+    TrackingResponse_driver_location:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        heading:
+          type: number
+          format: float
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

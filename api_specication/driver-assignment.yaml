@@ -1,0 +1,220 @@
+openapi: 3.0.0
+info:
+  title: Driver Assignment API (FR04)
+  description: |
+    API phục vụ cho chức năng Phân công tài xế (FR04). Chịu trách nhiệm gửi yêu cầu nhận chuyến đến tài xế, xử lý các phản hồi (chấp nhận/từ chối) và xử lý quá thời gian (timeout).
+
+    ### Yêu cầu nghiệp vụ (Business Requirements) được đáp ứng:
+    - **BR11**: Ghi nhận từ chối/không phản hồi và tiếp tục tìm tài xế khác.
+    - **BR13**: Gửi yêu cầu, ghi nhận chấp nhận, phân công tài xế chính thức cho chuyến đi.
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/nguyen-14e/account-management/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/api/v1
+  description: Local server
+security:
+- bearerAuth: []
+tags:
+- name: Dispatch
+  description: "Gửi yêu cầu chuyến đi cho tài xế và nhận phản hồi (BR11, BR13)"
+paths:
+  /dispatch/offers:
+    post:
+      tags:
+      - Dispatch
+      summary: Tạo và gửi yêu cầu nhận chuyến (Offer) cho tài xế
+      description: Hệ thống điều phối (Dispatch Engine) gọi API này để gửi thông tin cuốc xe tới một tài xế cụ thể. Yêu cầu này sẽ có thời gian hết hạn (timeout).
+      operationId: createDispatchOffer
+      requestBody:
+        description: Thông tin cuốc xe cần gửi cho tài xế
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferRequest"
+        required: true
+      responses:
+        "201":
+          description: Đã tạo yêu cầu và gửi thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferResponse"
+        "400":
+          description: Dữ liệu không hợp lệ (Ví dụ chuyến đi đã bị hủy)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /dispatch/offers/{offerId}/accept:
+    put:
+      tags:
+      - Dispatch
+      summary: Tài xế chấp nhận cuốc xe
+      description: "Ghi nhận tài xế chấp nhận, chuyển trạng thái chuyến đi thành 'assigned' và gán tài xế chính thức cho chuyến (BR13)."
+      operationId: acceptOffer
+      parameters:
+      - name: offerId
+        in: path
+        description: ID của lời mời nhận chuyến
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: "Chấp nhận thành công, trả về thông tin chuyến đi chính thức"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripAssignmentResponse"
+        "409":
+          description: "Lời mời đã hết hạn, bị hủy hoặc đã có tài xế khác nhận"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /dispatch/offers/{offerId}/reject:
+    put:
+      tags:
+      - Dispatch
+      summary: Tài xế từ chối cuốc xe
+      description: Ghi nhận tài xế từ chối. Hệ thống sẽ bỏ qua tài xế này và kích hoạt việc gửi yêu cầu cho tài xế tiếp theo (BR11).
+      operationId: rejectOffer
+      parameters:
+      - name: offerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        description: Lý do từ chối (Không bắt buộc)
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/offerId_reject_body"
+        required: false
+      responses:
+        "200":
+          description: Ghi nhận từ chối thành công
+        "404":
+          description: Không tìm thấy Offer ID
+  /dispatch/offers/{offerId}/timeout:
+    put:
+      tags:
+      - Dispatch
+      summary: Xử lý yêu cầu không được phản hồi (Timeout)
+      description: "Hệ thống tự động gọi API này khi hết thời gian đếm ngược (VD: 15 giây) mà tài xế không phản hồi. Ghi nhận bỏ qua và tìm tài xế khác (BR11)."
+      operationId: timeoutOffer
+      parameters:
+      - name: offerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Đã đánh dấu yêu cầu là timeout thành công
+        "404":
+          description: Không tìm thấy Offer ID
+components:
+  schemas:
+    OfferRequest:
+      required:
+      - booking_id
+      - driver_id
+      type: object
+      properties:
+        booking_id:
+          type: string
+          description: ID của yêu cầu đặt xe
+          format: uuid
+        driver_id:
+          type: string
+          description: ID của tài xế được hệ thống chọn (từ FR03)
+          format: uuid
+        timeout_seconds:
+          type: integer
+          description: Thời gian cho phép tài xế phản hồi (tính bằng giây)
+          default: 15
+    OfferResponse:
+      required:
+      - booking_id
+      - driver_id
+      - expires_at
+      - id
+      - status
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID của lời mời nhận chuyến
+          format: uuid
+        booking_id:
+          type: string
+          format: uuid
+        driver_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          description: Trạng thái của lời mời
+          enum:
+          - pending
+          - accepted
+          - rejected
+          - timeout
+        expires_at:
+          type: string
+          description: Thời điểm lời mời hết hạn
+          format: date-time
+    TripAssignmentResponse:
+      required:
+      - assigned_at
+      - booking_id
+      - driver_id
+      - status
+      - trip_id
+      type: object
+      properties:
+        trip_id:
+          type: string
+          description: Mã chuyến đi chính thức được tạo ra sau khi có tài xế
+          format: uuid
+        booking_id:
+          type: string
+          format: uuid
+        driver_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          description: Trạng thái cuốc xe đã được phân công
+          enum:
+          - driver_assigned
+        assigned_at:
+          type: string
+          description: Thời gian phân công thành công
+          format: date-time
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: DISPATCH_002
+        message:
+          type: string
+          example: Lời mời nhận chuyến đã hết hạn hoặc đã có người khác nhận.
+    offerId_reject_body:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: "Lý do từ chối (VD: Đang bận, Xe hỏng)"
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

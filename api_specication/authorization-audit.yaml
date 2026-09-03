@@ -1,0 +1,195 @@
+openapi: 3.0.0
+info:
+  title: Authorization and Audit API (FR13)
+  description: |
+    API phục vụ cho chức năng Phân quyền và Kiểm toán (FR13). Quản lý vai trò (Role), quyền truy cập (Permission) và truy xuất nhật ký hệ thống (Audit Log).
+
+    ### Yêu cầu nghiệp vụ (Business Requirements) được đáp ứng:
+    - **BR04**: Phân quyền và kiểm soát quyền truy cập các chức năng quản trị.
+    - **BR38**: Kiểm tra quyền của người dùng trước khi thực hiện thao tác quản trị.
+    - **BR39**: Kiểm soát quyền truy cập đối với dữ liệu cá nhân, phương tiện, vị trí, giao dịch.
+    - **BR40**: Ghi nhận các thao tác quan trọng để phục vụ kiểm tra, xử lý sự cố (Audit Log).
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/nguyen-14e/account-management/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: http://localhost:8080/api/v1/admin
+  description: Admin Server
+security:
+- bearerAuth: []
+tags:
+- name: Roles & Permissions
+  description: "Cấu hình và gán quyền cho người dùng (BR04, BR38, BR39)"
+- name: Audit Logs
+  description: Ghi nhận và tra cứu lịch sử thao tác hệ thống (BR40)
+paths:
+  /roles:
+    get:
+      tags:
+      - Roles & Permissions
+      summary: Lấy danh sách các vai trò và quyền hạn
+      description: "Admin cấp cao sử dụng API này để xem các vai trò hiện có trong hệ thống (VD: SuperAdmin, Operator, Support) và danh sách quyền (permissions) tương ứng (BR04)."
+      operationId: getRoles
+      responses:
+        "200":
+          description: Danh sách vai trò
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoleDetail"
+  /users/{userId}/roles:
+    put:
+      tags:
+      - Roles & Permissions
+      summary: Gán hoặc thay đổi vai trò của người dùng
+      description: "API dùng để cấp quyền cho nhân viên vận hành hoặc giới hạn quyền truy cập của người dùng vào các dữ liệu nhạy cảm (BR38, BR39)."
+      operationId: assignUserRoles
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        description: Danh sách ID của các vai trò cần gán
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role_ids:
+                  type: array
+                  items:
+                    type: string
+        required: true
+      responses:
+        "200":
+          description: Cập nhật quyền thành công
+        "403":
+          description: Người thực hiện không có quyền thay đổi vai trò (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /audit-logs:
+    get:
+      tags:
+      - Audit Logs
+      summary: Truy xuất nhật ký thao tác hệ thống (Audit Log)
+      description: "Hỗ trợ quản trị viên tra cứu các thao tác quan trọng đã diễn ra (VD: ai đã hủy chuyến, ai đã hoàn tiền, ai đã đổi thông tin tài xế) nhằm phục vụ kiểm tra và xử lý sự cố (BR40)."
+      operationId: getAuditLogs
+      parameters:
+      - name: user_id
+        in: query
+        description: Lọc log theo ID của người dùng/nhân viên thực hiện
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: action
+        in: query
+        description: "Lọc log theo hành động (VD: 'CANCEL_TRIP', 'REFUND_PAYMENT')"
+        required: false
+        schema:
+          type: string
+      - name: start_date
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: end_date
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 0
+      responses:
+        "200":
+          description: Danh sách nhật ký thao tác
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+components:
+  schemas:
+    RoleDetail:
+      required:
+      - id
+      - name
+      - permissions
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          description: "Tên vai trò (VD: Admin, Operation, Support)"
+        permissions:
+          type: array
+          description: "Danh sách các mã quyền (VD: 'view_users', 'edit_trips', 'process_refunds')"
+          items:
+            type: string
+    AuditLog:
+      required:
+      - action
+      - created_at
+      - id
+      - user_id
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          description: ID của người thực hiện thao tác
+          format: uuid
+        action:
+          type: string
+          description: "Tên hành động (VD: 'UPDATE_DRIVER_STATUS')"
+        resource_id:
+          type: string
+          description: "ID của đối tượng bị tác động (VD: ID của chuyến đi hoặc tài xế)"
+          nullable: true
+        details:
+          type: object
+          additionalProperties: true
+          description: "Dữ liệu chi tiết về sự thay đổi (VD: giá trị cũ và giá trị mới)"
+        ip_address:
+          type: string
+          description: Địa chỉ IP thực hiện request
+        created_at:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+          example: AUTH_003
+        message:
+          type: string
+          example: Bạn không có quyền truy cập vào tài nguyên này.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
