@@ -1,0 +1,366 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR02 Booking
+  description: |
+    FR02 - Booking module of the CAB System MVP.
+
+    Covers entering pickup/destination, selecting vehicle type, previewing
+    an estimated fare, and creating/receiving a booking request.
+
+    ### Traceability
+    - **Business Requirements:** BR07 (Create booking request),
+      BR08 (Receive booking request), BR44 (Support extending service
+      types - architectural principle, 🔵)
+    - **Use Cases:** UC04 (Book a trip)
+    - **Acceptance Criteria:** AC07, AC08, AC44
+    - **Business Rules:** Booking creation initializes the trip's status
+      as "Searching for driver" (see B12.2 state machine); actual driver
+      search/assignment is handled by FR03/FR04.
+
+    ### Notes
+    - `vehicleType` is a free-form code validated against `/vehicle-types`
+      rather than a hardcoded enum, so new service/vehicle types can be
+      added without changing this schema (BR44 / AC44).
+    - Fare shown by `/bookings/fare-estimate` is a preview only. The final
+      fare is computed after trip completion by FR07 (Fare Calculation).
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Vehicle Types
+    description: Available service/vehicle types (supports BR44 extensibility)
+  - name: Booking
+    description: Create and manage booking requests (UC04)
+
+paths:
+  /vehicle-types:
+    get:
+      summary: List available vehicle types
+      description: >
+        Supports BR44/AC44: new vehicle/service types can be added here
+        without changing the booking schema or logic.
+      operationId: listVehicleTypes
+      tags:
+        - Vehicle Types
+      responses:
+        '200':
+          description: List of available vehicle types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VehicleType'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bookings/fare-estimate:
+    post:
+      summary: Get an estimated fare before confirming a booking
+      description: >
+        UC04 step 5 - "View estimated fare". This is a preview only; the
+        authoritative fare is calculated after trip completion by FR07.
+      operationId: getFareEstimate
+      tags:
+        - Booking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FareEstimateRequest'
+      responses:
+        '200':
+          description: Estimated fare for the requested trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FareEstimateResponse'
+        '400':
+          description: Invalid pickup/destination/vehicleType
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bookings:
+    post:
+      summary: Create a new booking request
+      description: >
+        UC04 - Book a trip. Implements AC07 (given a logged-in customer,
+        when full valid information is submitted and confirmed, the
+        request is created with status "Searching for driver") and AC08
+        (given a valid request, the system receives it, stores it, and
+        moves it to the driver search process, BP02). Invalid data is
+        rejected per the UC04 exception flow.
+      operationId: createBooking
+      tags:
+        - Booking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreateRequest'
+      responses:
+        '201':
+          description: >
+            Booking request created and handed off to driver search
+            (BP02 / FR03)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          description: Invalid pickup/destination/vehicleType
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bookings/{bookingId}:
+    get:
+      summary: Get a booking's details and current status
+      description: >
+        Lets the customer check whether the booking is still searching for
+        a driver, was matched, had no driver found (AC12), or was
+        cancelled.
+      operationId: getBookingById
+      tags:
+        - Booking
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Booking found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bookings/{bookingId}/cancel:
+    post:
+      summary: Cancel a booking while it is still searching for a driver
+      description: >
+        BP05 - "Khách hàng hủy" during the "Chờ tìm tài xế" step (Trip
+        state DangTimTaiXe -> DaHuy per B12.2). Cancelling a booking that
+        has already been matched to a driver must go through FR05's trip
+        cancellation flow (BR17 / UC17) instead.
+      operationId: cancelBooking
+      tags:
+        - Booking
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Booking cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            Booking can no longer be cancelled through this endpoint
+            (already matched to a driver, or already completed/cancelled)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    VehicleType:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Stable identifier used when creating a booking (e.g. "STANDARD_4_SEAT")
+        displayName:
+          type: string
+        description:
+          type: string
+        active:
+          type: boolean
+
+    BookingStatus:
+      type: string
+      enum:
+        - SEARCHING_DRIVER
+        - MATCHED
+        - NO_DRIVER_FOUND
+        - CANCELLED
+      description: >
+        Mirrors the initial states of the Trip state machine (B12.2):
+        Đang tìm tài xế, Đã phân công, Không tìm được tài xế, Đã hủy.
+
+    FareEstimateRequest:
+      type: object
+      properties:
+        pickupLocation:
+          type: string
+        destination:
+          type: string
+        vehicleType:
+          type: string
+          description: A code from GET /vehicle-types
+      required:
+        - pickupLocation
+        - destination
+        - vehicleType
+
+    FareEstimateResponse:
+      type: object
+      properties:
+        estimatedFare:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          example: VND
+        estimatedDistance:
+          type: number
+          format: decimal
+        vehicleType:
+          type: string
+
+    BookingCreateRequest:
+      type: object
+      description: Payload for UC04 - Book a trip
+      properties:
+        pickupLocation:
+          type: string
+        destination:
+          type: string
+        vehicleType:
+          type: string
+          description: A code from GET /vehicle-types
+      required:
+        - pickupLocation
+        - destination
+        - vehicleType
+
+    Booking:
+      type: object
+      description: Maps to the Booking entity (B9.1)
+      properties:
+        bookingId:
+          type: integer
+          format: int64
+        customerId:
+          type: integer
+          format: int64
+        pickupLocation:
+          type: string
+        destination:
+          type: string
+        vehicleType:
+          type: string
+        bookingTime:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/BookingStatus'
+        tripId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Set once matched to a driver (populated by FR03/FR04)
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
