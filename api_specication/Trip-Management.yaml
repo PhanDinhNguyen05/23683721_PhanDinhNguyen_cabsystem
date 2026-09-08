@@ -1,0 +1,484 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR05 Trip Management
+  description: |
+    FR05 - Trip Management module of the CAB System MVP.
+
+    Owns the Trip resource from the moment a driver is assigned (by FR04)
+    through progress updates, tracking, cancellation, and incident
+    reporting.
+
+    ### Traceability
+    - **Business Requirements:** BR14 (Manage trip status),
+      BR15 (Track a trip), BR17 (Handle a cancelled or failed trip)
+    - **Use Cases:** UC07 - Update trip status (Driver), UC08 - Track a
+      trip (Customer). Staff-facing monitoring/incident handling over
+      this same Trip resource (UC17, UC18) is exposed separately by FR11.
+    - **Acceptance Criteria:** AC14, AC15, AC17
+    - **Business Rules:** BRule03 (a trip has exactly one driver),
+      BRule05 (status must follow the fixed sequence below; no skipping
+      steps), BRule13 (a temporary network disconnect does not
+      auto-cancel a trip)
+
+    ### Trip status sequence (B12.2)
+    
+    ### Notes
+    - A Trip is created by FR04 in status `DRIVER_ASSIGNED`; this module
+      does not expose a trip-creation endpoint.
+    - Live driver location and ETA fields are populated by FR06 (Location
+      Tracking); this module returns them as part of the Trip view but
+      does not own their update logic.
+    - Fare calculation (FR07) runs after a trip reaches `COMPLETED`; the
+      `fare` field is null until then.
+    - Notifications for each status change (BR26, BR27) are sent by FR09.
+    - Completed/cancelled trips are persisted for lookup by FR14 (BR18).
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Trip Tracking
+    description: Viewing trip details and status (UC08)
+  - name: Trip Progress
+    description: Driver-side status updates (UC07)
+  - name: Trip Cancellation & Incidents
+    description: Cancelling a trip or reporting a failure (BR17)
+
+paths:
+  /trips/{tripId}:
+    get:
+      summary: Get a trip's full details and current status
+      description: >
+        UC08 steps 1-4 - view driver/vehicle info, live location, and
+        status. Implements AC15: given a trip with a driver assigned,
+        returns the current real-time status and info to the customer.
+        Also used by the driver to view their own active trip (UC07).
+      operationId: getTripById
+      tags:
+        - Trip Tracking
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Trip found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customers/me/trips/active:
+    get:
+      summary: Get the current customer's active trip, if any
+      description: >
+        UC08 step 1 - "mở thông tin chuyến" without needing to already
+        know the trip ID. Returns 404 if the customer has no trip
+        currently in progress.
+      operationId: getMyActiveTripAsCustomer
+      tags:
+        - Trip Tracking
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The customer's currently active trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No active trip for this customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/me/trips/active:
+    get:
+      summary: Get the current driver's active trip, if any
+      description: >
+        UC07 step 1 - the driver's view of the trip they are currently
+        assigned to (any status before COMPLETED/CANCELLED/FAILED).
+      operationId: getMyActiveTripAsDriver
+      tags:
+        - Trip Tracking
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The driver's currently active trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No active trip for this driver
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /trips/{tripId}/status:
+    patch:
+      summary: Driver updates the trip's progress status
+      description: >
+        UC07 steps 2-7. Implements AC14: the status must move strictly
+        through the sequence in B12.2 (BRule05) - any attempt to skip a
+        step, or to update a trip that is not the caller's own, is
+        rejected with 409.
+      operationId: updateTripStatus
+      tags:
+        - Trip Progress
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripStatusUpdateRequest'
+      responses:
+        '200':
+          description: Trip status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '400':
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            Requested status does not follow the required sequence
+            (BRule05), or the trip is not assigned to the calling driver
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /trips/{tripId}/cancel:
+    post:
+      summary: Cancel a trip
+      description: >
+        BP05 - "Khách hàng/Tài xế hủy", allowed while status is
+        `DRIVER_ASSIGNED` or `ARRIVING_PICKUP` (per B12.2). Implements
+        AC17: the trip status is updated, the reason is stored, and the
+        other party is notified (via FR09). Cancelling a trip that has
+        already been picked up or completed is rejected.
+      operationId: cancelTrip
+      tags:
+        - Trip Cancellation & Incidents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripCancelRequest'
+      responses:
+        '200':
+          description: Trip cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            Trip is no longer cancellable (already picked up, completed,
+            cancelled, or failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /trips/{tripId}/incidents:
+    post:
+      summary: Report an incident that prevents the trip from continuing
+      description: >
+        UC07/UC08 exception path and BR17 - "xử lý chuyến bị lỗi". Marks
+        the trip as `FAILED` and records a description for staff to
+        review and resolve (handled by FR11 / UC18). This endpoint only
+        records the incident; resolution workflow is out of scope here.
+      operationId: reportTripIncident
+      tags:
+        - Trip Cancellation & Incidents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripIncidentReportRequest'
+      responses:
+        '200':
+          description: Incident recorded, trip marked as FAILED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Trip is already in a terminal state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TripStatus:
+      type: string
+      enum:
+        - DRIVER_ASSIGNED
+        - ARRIVING_PICKUP
+        - PICKED_UP
+        - IN_PROGRESS
+        - COMPLETED
+        - CANCELLED
+        - FAILED
+      description: Maps to the Trip state machine in B12.2
+
+    Trip:
+      type: object
+      description: Maps to the Trip entity (B9.1)
+      properties:
+        tripId:
+          type: integer
+          format: int64
+        bookingId:
+          type: integer
+          format: int64
+        customerId:
+          type: integer
+          format: int64
+        driverId:
+          type: integer
+          format: int64
+        vehicleId:
+          type: integer
+          format: int64
+        pickupLocation:
+          type: string
+        destination:
+          type: string
+        distance:
+          type: number
+          format: decimal
+          nullable: true
+          description: Finalized once the trip is COMPLETED
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/TripStatus'
+        fare:
+          type: number
+          format: decimal
+          nullable: true
+          description: Populated by FR07 after the trip is COMPLETED
+        currentDriverLocation:
+          type: string
+          nullable: true
+          description: Live location, maintained by FR06
+        etaMinutes:
+          type: integer
+          format: int32
+          nullable: true
+          description: Estimated time to pickup, computed by FR06
+
+    TripStatusUpdateRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ARRIVING_PICKUP
+            - PICKED_UP
+            - IN_PROGRESS
+            - COMPLETED
+          description: >
+            Must be exactly the next status in the B12.2 sequence after
+            the trip's current status (BRule05)
+      required:
+        - status
+
+    TripCancelRequest:
+      type: object
+      properties:
+        cancelledBy:
+          type: string
+          enum:
+            - CUSTOMER
+            - DRIVER
+        reason:
+          type: string
+      required:
+        - cancelledBy
+
+    TripIncidentReportRequest:
+      type: object
+      properties:
+        description:
+          type: string
+      required:
+        - description
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
