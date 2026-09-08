@@ -1,0 +1,378 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR04 Driver Assignment
+  description: |
+    FR04 - Driver Assignment module of the CAB System MVP.
+
+    Sends a trip request to a candidate driver (produced by FR03), records
+    the driver's accept/reject/no-response decision, retries with the next
+    candidate when needed, and finalizes the driver assignment for a
+    booking.
+
+    ### Traceability
+    - **Business Requirements:** BR11 (Handle driver refusal/no response),
+      BR13 (Assign driver to trip)
+    - **Use Cases:** UC05 - Find and assign a driver (steps 5-8: send
+      request, driver accepts, assign, notify customer), UC06 - Accept/
+      Reject a trip
+    - **Acceptance Criteria:** AC11, AC13
+    - **Business Rules:** BRule03 (a trip is assigned to exactly one
+      driver at a time), BRule04 (a driver who already refused a booking
+      is never re-sent a request for that same booking)
+
+    ### Notes
+    - Candidates come from FR03 (`GET /bookings/{bookingId}/candidate-drivers`).
+    - On acceptance, this module creates the Trip resource in the
+      "Assigned" state (Đã phân công, per B12.2) and updates the
+      Booking's status to MATCHED. Everything after that point (trip
+      progress, cancellation) is owned by FR05.
+    - On refusal/timeout, this module is expected to call FR03's
+      `refresh` endpoint (excluding the refusing driver, per BRule04)
+      and re-send a request to the next candidate.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Trip Requests (System)
+    description: Sending and expiring trip requests to drivers (UC05)
+  - name: Trip Requests (Driver)
+    description: A driver viewing and responding to trip requests (UC06)
+
+paths:
+  /bookings/{bookingId}/trip-requests:
+    post:
+      summary: Send a trip request to the next candidate driver
+      description: >
+        UC05 step 5. Sends the booking's request to one driver (normally
+        the top-ranked candidate from FR03). Fails with 409 if a driver is
+        already assigned to this booking (BRule03) or if the target
+        driver already refused this booking (BRule04).
+      operationId: createTripRequest
+      tags:
+        - Trip Requests (System)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          description: ID of the booking to send a trip request for
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripRequestCreate'
+      responses:
+        '201':
+          description: Trip request sent to the driver
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripRequest'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Booking or driver not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            Booking already has a driver assigned (BRule03), or this
+            driver already refused this booking (BRule04)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /trip-requests/{requestId}/expire:
+    post:
+      summary: Mark a trip request as expired (no response in time)
+      description: >
+        UC05/UC06 exception - "Không phản hồi đúng hạn". Normally invoked
+        by an internal scheduler once a request's `respondBy` time has
+        passed, so the next candidate can be requested (BR11). Exposed
+        here so it can be tested/triggered explicitly.
+      operationId: expireTripRequest
+      tags:
+        - Trip Requests (System)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Trip request marked expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripRequest'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Trip request is no longer pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/me/trip-requests/pending:
+    get:
+      summary: Get the current driver's pending trip request(s)
+      description: >
+        UC06 step 1-2 - "Nhận thông báo chuyến mới, xem thông tin".
+        Returns the pending request(s) currently awaiting this driver's
+        response.
+      operationId: getMyPendingTripRequests
+      tags:
+        - Trip Requests (Driver)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of pending trip requests for this driver
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TripRequest'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /trip-requests/{requestId}/respond:
+    post:
+      summary: Driver accepts or rejects a trip request
+      description: >
+        UC06 - Accept/Reject a trip. Implements AC11 (a refused/expired
+        request causes the system to move on to another driver without
+        re-sending to this one - BRule04) and AC13 (an accepted request
+        assigns the driver to the trip; the trip is exclusively theirs -
+        BRule03). Rejecting is not itself an error - it returns 200 with
+        the updated request status.
+      operationId: respondToTripRequest
+      tags:
+        - Trip Requests (Driver)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripRequestRespond'
+      responses:
+        '200':
+          description: >
+            Request updated. If accepted, `assignedTrip` is populated with
+            the newly created Trip in the "Assigned" state (Đã phân công);
+            further trip progress is managed by FR05.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripRequestResponseResult'
+        '400':
+          description: Invalid decision value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            Request is no longer pending (already responded to, expired,
+            or the booking was already assigned/cancelled - BRule03)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TripRequestStatus:
+      type: string
+      enum:
+        - PENDING
+        - ACCEPTED
+        - REJECTED
+        - EXPIRED
+
+    TripRequestCreate:
+      type: object
+      description: >
+        bookingId is taken from the path, not repeated here, to avoid a
+        path/body mismatch.
+      properties:
+        driverId:
+          type: integer
+          format: int64
+        respondBy:
+          type: string
+          format: date-time
+          description: Deadline for the driver to respond (policy TBD - see B4.12)
+      required:
+        - driverId
+
+    TripRequest:
+      type: object
+      properties:
+        requestId:
+          type: integer
+          format: int64
+        bookingId:
+          type: integer
+          format: int64
+        driverId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/TripRequestStatus'
+        sentAt:
+          type: string
+          format: date-time
+        respondBy:
+          type: string
+          format: date-time
+        respondedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    TripRequestRespond:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum:
+            - ACCEPT
+            - REJECT
+      required:
+        - decision
+
+    TripRequestResponseResult:
+      type: object
+      properties:
+        request:
+          $ref: '#/components/schemas/TripRequest'
+        assignedTrip:
+          $ref: '#/components/schemas/AssignedTrip'
+          nullable: true
+          description: Populated only when decision was ACCEPT
+
+    AssignedTrip:
+      type: object
+      description: >
+        Minimal Trip view returned at the moment of assignment. Full trip
+        lifecycle management (status updates, tracking, cancellation) is
+        owned by FR05.
+      properties:
+        tripId:
+          type: integer
+          format: int64
+        bookingId:
+          type: integer
+          format: int64
+        customerId:
+          type: integer
+          format: int64
+        driverId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+            - DRIVER_ASSIGNED
+          description: Maps to "Đã phân công" in the B12.2 state machine
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
