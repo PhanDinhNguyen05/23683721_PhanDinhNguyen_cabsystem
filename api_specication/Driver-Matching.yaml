@@ -1,0 +1,242 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR03 Driver Matching
+  description: |
+    FR03 - Driver Matching module of the CAB System MVP.
+
+    Identifies and ranks candidate drivers for a booking, based on
+    location, availability status, and operational criteria. This module
+    only produces the ranked candidate list; sending the request to each
+    driver and handling accept/reject/timeout is FR04 (Driver Assignment).
+
+    ### Traceability
+    - **Business Requirements:** BR09 (Automatically find drivers),
+      BR10 (Prioritize suitable drivers)
+    - **Use Cases:** UC05 - Find and assign a driver (steps 1-4: receive
+      request, get pickup location, find available drivers, rank by
+      priority/proximity). Actor is the System itself (automatic).
+    - **Acceptance Criteria:** AC09, AC10
+    - **Business Rules:** BRule02 (only drivers with status "Ready" are
+      eligible for search)
+
+    ### Notes
+    - This module is read-only from the API's point of view: it computes
+      and returns a ranked candidate list for a booking. FR04 consumes
+      this list to actually contact drivers one by one and perform the
+      assignment.
+    - Candidate location/status data comes from FR06 (Location Tracking)
+      and driver availability from FR11 (Driver status).
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Driver Matching
+    description: Find and rank candidate drivers for a booking (UC05)
+
+paths:
+  /bookings/{bookingId}/candidate-drivers:
+    get:
+      summary: Get the ranked list of candidate drivers for a booking
+      description: >
+        UC05 steps 1-4. Implements AC09 (given a booking waiting for a
+        driver, when the search runs, the returned list only contains
+        drivers with status "Ready" matching the requested vehicle type -
+        BRule02) and AC10 (given multiple matching drivers, when ranked,
+        the nearest/best-fit driver is returned first). An empty list
+        means no suitable driver was found (leads to BR12 / AC12,
+        handled by FR09 notifications).
+      operationId: getCandidateDrivers
+      tags:
+        - Driver Matching
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          description: ID of the booking to find drivers for
+          schema:
+            type: integer
+            format: int64
+        - name: maxResults
+          in: query
+          required: false
+          description: Maximum number of ranked candidates to return
+          schema:
+            type: integer
+            format: int32
+            default: 10
+        - name: maxDistanceKm
+          in: query
+          required: false
+          description: Maximum search radius from the pickup location
+          schema:
+            type: number
+            format: decimal
+      responses:
+        '200':
+          description: >
+            Ranked list of candidate drivers (may be empty if none are
+            available)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateDriverList'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            Booking is not in a state that allows driver search (e.g.
+            already matched, cancelled, or no driver found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bookings/{bookingId}/candidate-drivers/refresh:
+    post:
+      summary: Recompute the ranked candidate driver list for a booking
+      description: >
+        Re-runs the search/ranking (BR09, BR10) for a booking. Used by
+        FR04 when the current candidate at the front of the queue rejects
+        or does not respond in time (BR11), so a fresh/updated ranking
+        can be produced without the customer re-submitting the request.
+      operationId: refreshCandidateDrivers
+      tags:
+        - Driver Matching
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshCandidateDriversRequest'
+      responses:
+        '200':
+          description: Freshly ranked list of candidate drivers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateDriverList'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CandidateDriver:
+      type: object
+      description: A single ranked candidate produced by the matching search
+      properties:
+        driverId:
+          type: integer
+          format: int64
+        fullName:
+          type: string
+        vehicleType:
+          type: string
+        currentLocation:
+          type: string
+        distanceKm:
+          type: number
+          format: decimal
+        priorityRank:
+          type: integer
+          format: int32
+          description: 1 = highest priority (BR10); excluded drivers are not returned (BRule02)
+        excludedDriverIds:
+          type: array
+          description: >
+            Not part of this object; see CandidateDriverList.excludedDriverIds
+            for drivers deliberately skipped (e.g. already refused this
+            booking - BRule04)
+          items:
+            type: integer
+            format: int64
+
+    CandidateDriverList:
+      type: object
+      properties:
+        bookingId:
+          type: integer
+          format: int64
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateDriver'
+        excludedDriverIds:
+          type: array
+          description: >
+            Drivers deliberately excluded from this ranking (e.g. already
+            refused/timed out on this same booking - BRule04)
+          items:
+            type: integer
+            format: int64
+
+    RefreshCandidateDriversRequest:
+      type: object
+      properties:
+        excludeDriverIds:
+          type: array
+          description: >
+            Drivers to exclude from the new ranking - typically the
+            driver(s) who just refused or timed out (BR11, BRule04)
+          items:
+            type: integer
+            format: int64
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
