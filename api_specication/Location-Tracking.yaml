@@ -1,0 +1,269 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR06 Location Tracking
+  description: |
+    FR06 - Location Tracking module of the CAB System MVP.
+
+    Single source of truth for a driver's current location and for
+    estimated-time-of-arrival (ETA) calculations. FR03 (driver matching)
+    reads location data from here to rank candidates, and FR05 (trip
+    management) reads it to populate `Trip.currentDriverLocation` and
+    `Trip.etaMinutes`.
+
+    ### Traceability
+    - **Business Requirements:** BR06 (Track driver location),
+      BR16 (Track estimated arrival time)
+    - **Use Cases:** UC14 - Update location (Driver); feeds UC08 - Track
+      a trip (Customer, ETA display)
+    - **Acceptance Criteria:** AC06, AC16
+
+    ### Open item (see B4.12 - needs BA/customer confirmation)
+    - Exact location update frequency is not yet finalized. This spec
+      exposes a simple "push on change" update endpoint; a fixed polling
+      interval can be layered on top once the policy is confirmed.
+
+    ### Notes
+    - `CurrentLocation` in the B9 data model is stored as coordinates
+      here (`latitude`/`longitude`), which is what makes distance/ETA
+      calculations in FR03 and this module possible.
+    - A temporary loss of connection does not clear the last known
+      location (BRule13 handled by FR05); this module simply returns the
+      most recent location on record and its age (`updatedAt`).
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Driver Location
+    description: Updating and reading driver location (UC14)
+  - name: ETA
+    description: Estimated time of arrival for a trip (BR16)
+
+paths:
+  /drivers/me/location:
+    put:
+      summary: Update the current driver's location
+      description: >
+        UC14 - Update location. Implements AC06: whenever the driver's
+        location changes, the system stores it and makes it available for
+        driver search (FR03) and tracking (FR05). Rejected if the
+        driver has not enabled/granted location access on their end
+        (handled client-side; server treats missing coordinates as
+        invalid input).
+      operationId: updateMyLocation
+      tags:
+        - Driver Location
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationUpdateRequest'
+      responses:
+        '200':
+          description: Location updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverLocation'
+        '400':
+          description: Invalid or missing coordinates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/{driverId}/location:
+    get:
+      summary: Get a driver's last known location
+      description: >
+        Used internally by FR03 (candidate ranking) and by operations
+        staff (UC17/UC18) to check a driver's last reported position. Not
+        intended for the customer app directly - customers get driver
+        location as part of `Trip.currentDriverLocation` via FR05.
+      operationId: getDriverLocation
+      tags:
+        - Driver Location
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: driverId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Driver's last known location
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverLocation'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Driver not found, or no location has ever been reported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /trips/{tripId}/eta:
+    get:
+      summary: Get the estimated time of arrival for a trip
+      description: >
+        BR16 - Track estimated arrival time. Implements AC16: while the
+        driver is on the way to the pickup point, returns an ETA computed
+        from the driver's current location. Once the trip has moved past
+        pickup (status PICKED_UP or later), the ETA instead reflects
+        arrival at the destination.
+      operationId: getTripEta
+      tags:
+        - ETA
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Estimated time of arrival
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripEta'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            Trip has no assigned driver yet, or is already
+            completed/cancelled/failed, so no ETA applies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    GeoLocation:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+      required:
+        - latitude
+        - longitude
+
+    LocationUpdateRequest:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+      required:
+        - latitude
+        - longitude
+
+    DriverLocation:
+      type: object
+      description: Maps to Driver.CurrentLocation (B9.1), stored as coordinates
+      properties:
+        driverId:
+          type: integer
+          format: int64
+        location:
+          $ref: '#/components/schemas/GeoLocation'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of the last reported location
+
+    TripEta:
+      type: object
+      properties:
+        tripId:
+          type: integer
+          format: int64
+        target:
+          type: string
+          enum:
+            - PICKUP
+            - DESTINATION
+          description: Which point the ETA is calculated toward
+        etaMinutes:
+          type: integer
+          format: int32
+        distanceKm:
+          type: number
+          format: decimal
+        calculatedAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
