@@ -1,0 +1,219 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR07 Fare Calculation
+  description: |
+    FR07 - Fare Calculation module of the CAB System MVP.
+
+    Determines the amount a customer must pay once a trip has completed,
+    and persists the result before the flow moves on to FR08 (Payment).
+
+    ### Traceability
+    - **Business Requirements:** BR19 (Calculate trip fare)
+    - **Use Cases:** UC09 - Calculate fare (Actor: System)
+    - **Acceptance Criteria:** AC19
+    - **Business Rules:** BRule06 (fare is only calculated once a trip's
+      status is COMPLETED, per FR05's state machine)
+
+    ### Open item (see B4.12 - needs BA/customer confirmation)
+    - The exact fare formula (base fare, per-km rate, per-minute rate,
+      per-vehicle-type multipliers, minimum fare, rounding rules) is not
+      yet finalized by the business. This spec exposes a generic
+      `FareBreakdown` shape (base + distance + time + adjustments = total)
+      so the UI/other modules have a stable contract; the actual pricing
+      rule engine behind `POST /trips/{tripId}/fare/calculate` can be
+      swapped once the formula is confirmed, without changing this API.
+
+    ### Notes
+    - UC09's exception flow ("thiếu dữ liệu → chuyển nhân viên vận hành
+      xử lý") is modeled as a `NEEDS_REVIEW` fare status rather than a
+      hard failure, so the trip isn't stuck - operations staff resolve it
+      via FR11 (UC18-style incident handling).
+    - Once a fare is calculated, the customer is notified (FR09) and the
+      trip becomes payable (FR08 reads `Fare.amount`).
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Fare
+    description: Calculating and retrieving the fare for a completed trip (UC09)
+
+paths:
+  /trips/{tripId}/fare/calculate:
+    post:
+      summary: Calculate the fare for a completed trip
+      description: >
+        UC09 steps 1-6. Implements AC19: given a trip in status COMPLETED
+        (BRule06), calculates the amount owed, stores it, and returns it
+        before the flow moves to payment (FR08). If required trip data is
+        missing (e.g. distance not recorded), the fare is stored with
+        status `NEEDS_REVIEW` instead of failing outright, per UC09's
+        exception flow.
+      operationId: calculateTripFare
+      tags:
+        - Fare
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '201':
+          description: >
+            Fare calculated (or flagged for review) and stored for this
+            trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fare'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            Trip is not in status COMPLETED (BRule06), or a fare has
+            already been calculated for this trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /trips/{tripId}/fare:
+    get:
+      summary: Get the calculated fare for a trip
+      description: >
+        Returns the previously calculated fare breakdown for a trip, used
+        by the customer app to display the amount owed and by FR08
+        (Payment) to know how much to charge.
+      operationId: getTripFare
+      tags:
+        - Fare
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Fare details for this trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fare'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip not found, or no fare has been calculated yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    FareStatus:
+      type: string
+      enum:
+        - CALCULATED
+        - NEEDS_REVIEW
+      description: >
+        NEEDS_REVIEW covers UC09's exception flow (missing data escalated
+        to operations staff via FR11)
+
+    FareBreakdown:
+      type: object
+      description: >
+        Generic breakdown shape; the concrete formula behind these
+        numbers is pending BA confirmation (see B4.12)
+      properties:
+        baseFare:
+          type: number
+          format: decimal
+        distanceFare:
+          type: number
+          format: decimal
+        timeFare:
+          type: number
+          format: decimal
+        adjustments:
+          type: number
+          format: decimal
+          description: >
+            Any additional charge/discount applied before finalization
+            (formula TBD)
+
+    Fare:
+      type: object
+      description: Fare information stored on the Trip entity (B9.1, "Fare" field)
+      properties:
+        tripId:
+          type: integer
+          format: int64
+        vehicleType:
+          type: string
+        distance:
+          type: number
+          format: decimal
+        breakdown:
+          $ref: '#/components/schemas/FareBreakdown'
+        amount:
+          type: number
+          format: decimal
+          description: Total amount the customer must pay
+        currency:
+          type: string
+          example: VND
+        status:
+          $ref: '#/components/schemas/FareStatus'
+        calculatedAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
