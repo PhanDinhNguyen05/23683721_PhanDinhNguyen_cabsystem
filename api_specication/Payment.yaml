@@ -1,0 +1,508 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR08 Payment
+  description: |
+    FR08 - Payment module of the CAB System MVP.
+
+    Handles cash and electronic payment for a completed trip's fare
+    (produced by FR07), including provider callbacks and retry after
+    failure.
+
+    ### Traceability
+    - **Business Requirements:** BR20 (Cash payment), BR21 (Electronic
+      payment), BR22 (Manage payment result), BR23 (Handle failed
+      payment), BR24 (Protect payment information), BR45 (Support
+      additional payment providers - architectural principle, 🔵)
+    - **Use Cases:** UC10 - Payment (Customer, external Payment Provider)
+    - **Acceptance Criteria:** AC20, AC21, AC22, AC23, AC24, AC45
+    - **Business Rules:** BRule09 (never store sensitive card/account
+      data directly - only the provider's transaction code),
+      BRule10 (a failed transaction is stored as "Failed" and can be
+      retried per policy - exact retry policy TBD, see B4.12),
+      BRule14 (a failure in this module must not interrupt the core
+      booking/trip flow - NFR05)
+
+    ### Open item (see B4.12 - needs BA/customer confirmation)
+    - Exact retry policy after a failed electronic payment (how many
+      retries, any cooldown) is not yet finalized. `POST
+      /payments/{paymentId}/retry` is exposed unconditionally for now.
+
+    ### Notes
+    - `providerCode` is a free-form code validated against
+      `/payment-methods` rather than a hardcoded enum, so new payment
+      methods/providers can be added without changing this schema
+      (BR45 / AC45) - same extensibility pattern used for vehicle types
+      in FR02.
+    - No card, bank account, or wallet credentials ever appear in any
+      request or response here (BRule09 / AC24, NFR10) - only the
+      provider-issued `transactionCode` is stored.
+    - This module is expected to be called via try-catch/async by FR05
+      so that a Payment Provider outage never blocks the trip itself
+      (BRule14 / NFR05).
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Payment Methods
+    description: Available payment methods/providers (supports BR45 extensibility)
+  - name: Payment
+    description: Creating, confirming, and retrying a trip's payment (UC10)
+  - name: Payment Provider Callback
+    description: Inbound result notification from the external Payment Provider
+
+paths:
+  /payment-methods:
+    get:
+      summary: List available payment methods
+      description: >
+        Supports BR45/AC45: new payment methods/providers can be added
+        here without changing the payment creation schema or logic.
+      operationId: listPaymentMethods
+      tags:
+        - Payment Methods
+      responses:
+        '200':
+          description: List of available payment methods
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentMethod'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /trips/{tripId}/payment:
+    get:
+      summary: Get the current payment status for a trip
+      description: >
+        Returns the payment record associated with a trip's fare, if a
+        payment attempt has been created.
+      operationId: getTripPayment
+      tags:
+        - Payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Payment record for this trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip not found, or no payment has been created yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /trips/{tripId}/payments:
+    post:
+      summary: Create a payment attempt for a trip's fare
+      description: >
+        UC10 steps 1-2. Implements AC20/AC21: given a trip with a
+        calculated fare (FR07), when the customer selects a method, a
+        payment is created. Cash payments are created in status PENDING
+        and finalized via the confirm-cash endpoint; electronic payments
+        are immediately forwarded to the Payment Provider and their
+        result is applied via the provider callback (AC22).
+      operationId: createTripPayment
+      tags:
+        - Payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreateRequest'
+      responses:
+        '201':
+          description: Payment attempt created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Invalid payment method/provider code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            No fare has been calculated for this trip yet, or a payment
+            already exists for this trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /payments/{paymentId}:
+    get:
+      summary: Get a payment's details by ID
+      operationId: getPaymentById
+      tags:
+        - Payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Payment found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /payments/{paymentId}/confirm-cash:
+    post:
+      summary: Confirm a cash payment was received
+      description: >
+        BP07 - "Xác nhận thanh toán" for the cash flow. Implements AC20:
+        given a cash payment was selected, when confirmed, the amount and
+        result are recorded and the transaction is stored.
+      operationId: confirmCashPayment
+      tags:
+        - Payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Cash payment confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            Payment is not a pending cash payment (wrong method, or
+            already confirmed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /payments/{paymentId}/retry:
+    post:
+      summary: Retry a failed electronic payment
+      description: >
+        BP07 - "Khách hàng muốn thanh toán lại". Implements AC23: given a
+        failed electronic payment, when the customer retries, a new
+        attempt is sent to the Payment Provider. Retry policy details
+        (max attempts, cooldown) are pending BA confirmation (B4.12).
+      operationId: retryPayment
+      tags:
+        - Payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Payment attempt resent to the provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Payment is not in status FAILED, or is not an electronic payment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /payments/{paymentId}/provider-callback:
+    post:
+      summary: Receive a payment result from the Payment Provider
+      description: >
+        BP07 - "Nhận kết quả giao dịch". Called by the external Payment
+        Provider (not by the app's own users) to report success or
+        failure for an electronic payment. Implements AC22: the
+        transaction status is updated exactly once and does not create
+        duplicate records. Secured separately from user-facing endpoints
+        since the caller is the Payment Provider, not a logged-in user.
+      operationId: handleProviderCallback
+      tags:
+        - Payment Provider Callback
+      security:
+        - providerApiKey: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderCallbackRequest'
+      responses:
+        '200':
+          description: Callback processed, payment status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Invalid callback payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid or missing provider API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Callback does not apply to this payment's current status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    providerApiKey:
+      type: apiKey
+      in: header
+      name: X-Provider-Api-Key
+
+  schemas:
+    PaymentMethod:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Stable identifier used when creating a payment (e.g. "CASH", "MOMO", "VNPAY")
+        displayName:
+          type: string
+        type:
+          type: string
+          enum:
+            - CASH
+            - ELECTRONIC
+        active:
+          type: boolean
+
+    PaymentStatus:
+      type: string
+      enum:
+        - PENDING
+        - SUCCESS
+        - FAILED
+      description: >
+        Maps to Payment.PaymentStatus (B9.1). A cash payment starts
+        PENDING and becomes SUCCESS on confirm-cash; an electronic
+        payment starts PENDING and becomes SUCCESS/FAILED via the
+        provider callback (BRule10).
+
+    PaymentCreateRequest:
+      type: object
+      properties:
+        paymentMethod:
+          type: string
+          description: A code from GET /payment-methods
+      required:
+        - paymentMethod
+
+    Payment:
+      type: object
+      description: >
+        Maps to the Payment entity (B9.1). Never contains raw card/bank
+        credentials (BRule09) - only the provider's own transactionCode.
+      properties:
+        paymentId:
+          type: integer
+          format: int64
+        tripId:
+          type: integer
+          format: int64
+        paymentMethod:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        paymentTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set once the payment reaches a final status
+        paymentStatus:
+          $ref: '#/components/schemas/PaymentStatus'
+        transactionCode:
+          type: string
+          nullable: true
+          description: Reference code issued by the Payment Provider (electronic only)
+
+    ProviderCallbackRequest:
+      type: object
+      description: Result payload sent by the external Payment Provider
+      properties:
+        result:
+          type: string
+          enum:
+            - SUCCESS
+            - FAILED
+        transactionCode:
+          type: string
+        failureReason:
+          type: string
+          nullable: true
+      required:
+        - result
+        - transactionCode
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
