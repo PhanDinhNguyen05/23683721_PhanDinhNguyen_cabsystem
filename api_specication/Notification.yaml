@@ -1,0 +1,318 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR09 Notification
+  description: |
+    FR09 - Notification module of the CAB System MVP.
+
+    Sends event-driven notifications to customers and drivers, and
+    exposes each user's notification history. Called internally by other
+    modules (FR02, FR03/FR04, FR05, FR08) whenever a relevant event
+    occurs; never blocks the caller's own flow.
+
+    ### Traceability
+    - **Business Requirements:** BR12 (Notify when no driver is found),
+      BR26 (Notify customer of booking status), BR27 (Notify driver),
+      BR28 (Support additional channels - architectural, 🔵),
+      BR42 (Ensure component independence - applied as an MVP coding
+      principle, not full infrastructure), BR46 (Support additional
+      notification providers - architectural, 🔵)
+    - **Use Cases:** No dedicated UC (system/architectural function per
+      B14's RTM); triggered as a side effect of UC04, UC05, UC06, UC07,
+      UC08, UC10
+    - **Acceptance Criteria:** AC12, AC26, AC27, AC28, AC42, AC46
+
+    ### Notes
+    - `POST /notifications` returns `202 Accepted` immediately and
+      processes delivery asynchronously. This is the concrete
+      implementation of BR42/NFR05: a Notification Provider outage or
+      slow response must never delay or fail the caller's own request
+      (e.g. FR05 updating trip status). Callers are expected to invoke
+      this endpoint in a try-catch/fire-and-forget manner.
+    - `channel` is a free-form code validated against
+      `/notification-channels` (same extensibility pattern as
+      `vehicleType` in FR02 and `paymentMethod` in FR08), so new channels
+      or providers can be added without changing this schema (BR28,
+      BR46 / AC28, AC46).
+    - `eventType` is a fixed enum mirroring the concrete events in BP08
+      (Đặt xe, Tài xế nhận chuyến, Tài xế đến, Hoàn thành chuyến, Thanh
+      toán, Chuyến mới cho tài xế), since those event meanings are part
+      of the confirmed MVP scope, unlike the channel/provider set.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Notification Channels
+    description: Available notification channels/providers (supports BR28/BR46 extensibility)
+  - name: Notifications
+    description: Sending and viewing notifications (BP08)
+
+paths:
+  /notification-channels:
+    get:
+      summary: List available notification channels
+      description: >
+        Supports BR28/BR46 and AC28/AC46: new channels/providers can be
+        added here without changing the notification-sending schema or
+        the logic in the modules that call it.
+      operationId: listNotificationChannels
+      tags:
+        - Notification Channels
+      responses:
+        '200':
+          description: List of available notification channels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationChannel'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /notifications:
+    post:
+      summary: Send a notification to a user
+      description: >
+        BP08 - triggered by other modules on a system event: booking
+        received (BR26), no driver found (BR12), driver assigned/trip
+        status changes (BR26, BR27), a new trip request for a driver
+        (BR27), or a payment result (BR26). Implements AC42: this
+        endpoint is designed to fail independently (returns 202 and
+        processes async) so a Notification Provider issue never
+        interrupts the caller's own booking/trip flow.
+      operationId: createNotification
+      tags:
+        - Notifications
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationCreateRequest'
+      responses:
+        '202':
+          description: >
+            Notification accepted for delivery (does not guarantee
+            delivery success - see the notification's own `status` field)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '400':
+          description: Invalid input, or unknown channel code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Target user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/me/notifications:
+    get:
+      summary: Get the current user's notification history
+      description: >
+        Lets a customer or driver view notifications they have received
+        (e.g. booking confirmations, trip updates, payment results, new
+        trip requests).
+      operationId: getMyNotifications
+      tags:
+        - Notifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventType
+          in: query
+          required: false
+          description: Optional filter by event type
+          schema:
+            $ref: '#/components/schemas/NotificationEventType'
+      responses:
+        '200':
+          description: List of notifications for the current user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /notifications/{notificationId}:
+    get:
+      summary: Get a single notification's details
+      operationId: getNotificationById
+      tags:
+        - Notifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Notification found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    NotificationChannel:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Stable identifier used when sending a notification (e.g. "SMS", "EMAIL", "PUSH")
+        displayName:
+          type: string
+        active:
+          type: boolean
+
+    NotificationEventType:
+      type: string
+      enum:
+        - BOOKING_RECEIVED
+        - NO_DRIVER_FOUND
+        - DRIVER_ASSIGNED
+        - DRIVER_ARRIVED
+        - TRIP_COMPLETED
+        - PAYMENT_RESULT
+        - NEW_TRIP_REQUEST
+        - TRIP_CHANGED
+      description: >
+        Mirrors the events in BP08: Đặt xe, Không tìm được tài xế, Tài xế
+        nhận chuyến, Tài xế đến, Hoàn thành chuyến, Thanh toán, Chuyến mới
+        cho tài xế, Thay đổi chuyến liên quan đến tài xế.
+
+    NotificationStatus:
+      type: string
+      enum:
+        - PENDING
+        - SENT
+        - FAILED
+      description: >
+        Maps to Notification.Status (B9.1). FAILED here reflects only the
+        notification's own delivery outcome and never propagates as an
+        error to the module that triggered it (BR42).
+
+    NotificationCreateRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Recipient (customer, driver, or staff)
+        eventType:
+          $ref: '#/components/schemas/NotificationEventType'
+        title:
+          type: string
+        content:
+          type: string
+        channel:
+          type: string
+          description: >
+            A code from GET /notification-channels. If omitted, the
+            recipient's default channel is used.
+      required:
+        - userId
+        - eventType
+        - title
+        - content
+
+    Notification:
+      type: object
+      description: Maps to the Notification entity (B9.1)
+      properties:
+        notificationId:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        content:
+          type: string
+        notificationType:
+          $ref: '#/components/schemas/NotificationEventType'
+        channel:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/NotificationStatus'
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
