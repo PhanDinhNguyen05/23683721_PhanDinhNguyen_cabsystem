@@ -1,0 +1,349 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR10 Driver Rating
+  description: |
+    FR10 - Driver Rating module of the CAB System MVP.
+
+    Lets a customer rate a driver after a trip completes, and stores/
+    exposes the resulting feedback data, including the running rating
+    summary a driver accumulates over time.
+
+    ### Traceability
+    - **Business Requirements:** BR29 (Rate a driver), BR30 (Manage
+      feedback)
+    - **Use Cases:** UC12 - Rate a driver
+    - **Acceptance Criteria:** AC29, AC30
+    - **Business Rules:** BRule07 (a trip that is not COMPLETED cannot be
+      rated), BRule08 (a trip can be rated at most once, by the customer
+      who took that trip)
+
+    ### Notes
+    - Only the customer who was on the trip may rate it - the trip's
+      `customerId` (from FR05) must match the authenticated caller.
+    - `GET /drivers/{driverId}/ratings/summary` implements BP09's final
+      step ("Cập nhật dữ liệu đánh giá tài xế") as a read of the
+      aggregated data, rather than a separate write - the aggregate is
+      derived from stored ratings, not stored redundantly.
+    - This summary is also what FR12 (Reporting) and FR03 (candidate
+      ranking, if rating is used as a tie-breaker) are expected to read
+      from, rather than each recomputing it independently.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Trip Rating
+    description: Rating a trip (UC12)
+  - name: Driver Ratings
+    description: A driver's received ratings and aggregate score (BR30)
+
+paths:
+  /trips/{tripId}/rating:
+    post:
+      summary: Rate the driver for a completed trip
+      description: >
+        UC12 steps 1-7. Implements AC29: given a COMPLETED trip
+        (BRule07), when the customer submits a valid score (and optional
+        comment), the rating is stored. Implements BRule08: a second
+        attempt to rate the same trip is rejected with 409.
+      operationId: createTripRating
+      tags:
+        - Trip Rating
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatingCreateRequest'
+      responses:
+        '201':
+          description: Rating created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+        '400':
+          description: Invalid score or comment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The authenticated customer was not the customer on this trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >
+            Trip is not COMPLETED (BRule07), or has already been rated
+            (BRule08)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: Get the rating for a trip, if any
+      description: >
+        BR30 - Manage feedback. Lets the customer see their own submitted
+        rating, or the driver see feedback they received for this trip.
+      operationId: getTripRating
+      tags:
+        - Trip Rating
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Rating for this trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Trip not found, or this trip has not been rated yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/{driverId}/ratings:
+    get:
+      summary: List ratings a driver has received
+      description: >
+        BR30 - Manage feedback. Paginated list of ratings/comments
+        received by a driver, most recent first.
+      operationId: listDriverRatings
+      tags:
+        - Driver Ratings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: driverId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Page of ratings for this driver
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RatingList'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Driver not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/{driverId}/ratings/summary:
+    get:
+      summary: Get a driver's aggregate rating summary
+      description: >
+        BP09 - "Cập nhật dữ liệu đánh giá tài xế", exposed as a derived
+        read (average score and total count) rather than a separately
+        maintained counter, so it is always consistent with the
+        underlying ratings.
+      operationId: getDriverRatingSummary
+      tags:
+        - Driver Ratings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: driverId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Aggregate rating summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverRatingSummary'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Driver not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RatingCreateRequest:
+      type: object
+      properties:
+        ratingScore:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          nullable: true
+      required:
+        - ratingScore
+
+    Rating:
+      type: object
+      description: Maps to the Rating entity (B9.1)
+      properties:
+        ratingId:
+          type: integer
+          format: int64
+        tripId:
+          type: integer
+          format: int64
+        customerId:
+          type: integer
+          format: int64
+        driverId:
+          type: integer
+          format: int64
+        ratingScore:
+          type: integer
+          format: int32
+        comment:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    RatingList:
+      type: object
+      properties:
+        driverId:
+          type: integer
+          format: int64
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rating'
+
+    DriverRatingSummary:
+      type: object
+      properties:
+        driverId:
+          type: integer
+          format: int64
+        averageScore:
+          type: number
+          format: decimal
+        totalRatings:
+          type: integer
+          format: int64
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
