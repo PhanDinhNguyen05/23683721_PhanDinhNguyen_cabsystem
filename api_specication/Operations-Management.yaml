@@ -1,0 +1,1289 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR11 Operations Management
+  description: |
+    FR11 - Operations Management module of the CAB System MVP.
+
+    Staff-facing back office functions (customer/driver/vehicle
+    management, ongoing-trip monitoring, incident resolution), plus the
+    vehicle and availability-status endpoints a driver uses to manage
+    their own profile.
+
+    Traceability:
+    - Business Requirements: BR03 (Manage vehicles),
+      BR05 (Manage driver status), BR31 (Manage customers),
+      BR32 (Manage drivers and vehicles), BR33 (Monitor ongoing trips),
+      BR34 (Support incident handling), BR41 (Ensure scalability -
+      architectural), BR43 (Support phased deployment - architectural)
+    - Use Cases: UC13 - Manage profile and vehicle (Driver, vehicle
+      part), UC15 - Manage customers (Staff), UC16 - Manage drivers
+      (Staff), UC17 - Manage trips (Staff monitoring), UC18 - Handle
+      incidents (Staff)
+    - Acceptance Criteria: AC03, AC05, AC31, AC32, AC33, AC34,
+      AC41, AC42 (consumed from FR09), AC43
+
+    Architectural notes (BR41, BR43 - design-only for the MVP):
+    - BR41/AC41 (scalability): endpoints here are stateless and scoped
+      per-resource (no server-side session state), so components can be
+      scaled independently later; no load-testing endpoint is exposed
+      in the MVP.
+    - BR43/AC43: this module is a separate deployable concern from
+      FR02-FR10 (it depends on their data but exposes no endpoints they
+      depend on), so it can be updated/deployed without touching the
+      customer/driver-facing flow.
+
+    Notes:
+    - Vehicle records (BR03) are owned by a driver; a driver manages
+      their own via /drivers/me/vehicles (UC13), while staff manage
+      any driver's via /drivers/{driverId}/vehicles (UC16) - same
+      underlying resource, different access path.
+    - Driver availability (PUT /drivers/me/status, BR05/AC05) is what
+      FR03's candidate search filters on (BRule02: only "Ready" drivers
+      are searched).
+    - Incident records referenced here are created by FR05's
+      POST /trips/{tripId}/incidents; this module is where staff view
+      and resolve them (BR34/UC18), closing the loop opened there.
+    - Trip monitoring (GET /trips) is a read-only staff view over the
+      same Trip resource FR05 owns; this module does not duplicate trip
+      status transitions.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Vehicle Management
+    description: Managing vehicles, by the owning driver or by staff (UC13, UC16)
+  - name: Driver Status
+    description: A driver's own availability status (BR05)
+  - name: Customer Management (Staff)
+    description: Staff viewing and managing customers (UC15)
+  - name: Driver Management (Staff)
+    description: Staff viewing and managing drivers (UC16)
+  - name: Trip Monitoring (Staff)
+    description: Staff view of ongoing and past trips (UC17)
+  - name: Incident Handling (Staff)
+    description: Reviewing and resolving trip incidents (UC18)
+
+paths:
+  /drivers/me/vehicles:
+    get:
+      summary: List the current driver's own vehicles
+      description: UC13 - view own vehicle info.
+      operationId: getMyVehicles
+      tags:
+        - Vehicle Management
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The driver's vehicles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vehicle'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Add a vehicle to the current driver's profile
+      description: >
+        UC13 - update vehicle info. Implements AC03: the vehicle is
+        stored and correctly linked to the owning driver.
+      operationId: createMyVehicle
+      tags:
+        - Vehicle Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleCreateRequest'
+      responses:
+        '201':
+          description: Vehicle created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /vehicles/{vehicleId}:
+    get:
+      summary: Get a vehicle's details
+      operationId: getVehicleById
+      tags:
+        - Vehicle Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Vehicle found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Vehicle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a vehicle's details
+      description: >
+        UC13 (owning driver) or UC16 (staff). Implements AC03/AC32:
+        updated data is stored accurately and reflected for related
+        modules (e.g. FR03 candidate ranking uses vehicleType).
+      operationId: updateVehicle
+      tags:
+        - Vehicle Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleUpdateRequest'
+      responses:
+        '200':
+          description: Vehicle updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is neither the owning driver nor staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Vehicle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Deactivate a vehicle
+      description: >
+        Soft-removal - sets the vehicle's status to inactive rather than
+        deleting the record, to preserve trip history (BR18) that
+        references it.
+      operationId: deactivateVehicle
+      tags:
+        - Vehicle Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Vehicle deactivated
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is neither the owning driver nor staff with permission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Vehicle not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/{driverId}/vehicles:
+    get:
+      summary: List a driver's vehicles (staff view)
+      description: UC16 - staff managing a driver's vehicles.
+      operationId: listDriverVehicles
+      tags:
+        - Vehicle Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: driverId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: The driver's vehicles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vehicle'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Driver not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/me/status:
+    put:
+      summary: Update the current driver's availability status
+      description: >
+        BR05 - "San sang nhan chuyen" toggle. Implements AC05: the change
+        takes effect immediately and only drivers in status READY are
+        surfaced by FR03's candidate search (BRule02).
+      operationId: updateMyDriverStatus
+      tags:
+        - Driver Status
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverStatusUpdateRequest'
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverStatus'
+        '400':
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Cannot change status while on an active trip
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customers:
+    get:
+      summary: List/search customers
+      description: >
+        UC15 steps 1-3. Implements AC31: staff with permission can
+        browse and search customer records within the scope of their
+        role (BR38).
+      operationId: listCustomers
+      tags:
+        - Customer Management (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Free-text search on name, email, or phone
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AccountStatus'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Page of customers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerAdminList'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customers/{customerId}:
+    get:
+      summary: Get a customer's details (staff view)
+      operationId: getCustomerByIdAdmin
+      tags:
+        - Customer Management (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Customer found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerAdminView'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a customer's record (staff)
+      description: >
+        UC15 steps 4-6. Implements AC31: updates stay within the staff
+        member's granted permissions (BR38); e.g. suspending an account.
+      operationId: updateCustomerAdmin
+      tags:
+        - Customer Management (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerAdminUpdateRequest'
+      responses:
+        '200':
+          description: Customer updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerAdminView'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers:
+    get:
+      summary: List/search drivers
+      description: >
+        UC16 steps 1-3. Implements AC32: staff with permission can
+        browse and search driver records.
+      operationId: listDrivers
+      tags:
+        - Driver Management (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DriverStatusValue'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Page of drivers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverAdminList'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /drivers/{driverId}:
+    get:
+      summary: Get a driver's details (staff view)
+      operationId: getDriverByIdAdmin
+      tags:
+        - Driver Management (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: driverId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Driver found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverAdminView'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Driver not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a driver's record (staff)
+      description: >
+        UC16 steps 4-6. Implements AC32: e.g. suspending a driver
+        account, correcting profile data.
+      operationId: updateDriverAdmin
+      tags:
+        - Driver Management (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: driverId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverAdminUpdateRequest'
+      responses:
+        '200':
+          description: Driver updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverAdminView'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Driver not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /trips:
+    get:
+      summary: List/search trips (staff monitoring view)
+      description: >
+        UC17 steps 1-4. Implements AC33: staff can view ongoing trips in
+        real time, and search historical trips for support purposes.
+        Trip status transitions themselves remain owned by FR05.
+      operationId: listTripsAdmin
+      tags:
+        - Trip Monitoring (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter by trip status
+          schema:
+            type: string
+        - name: driverId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: customerId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Page of trips
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripSummaryList'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /incidents:
+    get:
+      summary: List reported trip incidents
+      description: >
+        UC18 steps 1-3. Lists incidents created by FR05's
+        POST /trips/{tripId}/incidents, for staff to review.
+      operationId: listIncidents
+      tags:
+        - Incident Handling (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/IncidentStatus'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Page of incidents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentList'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /incidents/{incidentId}:
+    get:
+      summary: Get an incident's details
+      operationId: getIncidentById
+      tags:
+        - Incident Handling (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: incidentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Incident found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Incident not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /incidents/{incidentId}/resolve:
+    post:
+      summary: Resolve a trip incident
+      description: >
+        UC18 steps 4-7. Implements AC34: staff investigates, decides on a
+        resolution, applies it, and the outcome is stored in the
+        incident's history.
+      operationId: resolveIncident
+      tags:
+        - Incident Handling (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: incidentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentResolveRequest'
+      responses:
+        '200':
+          description: Incident resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Incident not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Incident is already resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AccountStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - SUSPENDED
+
+    DriverStatusValue:
+      type: string
+      enum:
+        - READY
+        - UNAVAILABLE
+        - ON_TRIP
+        - SUSPENDED
+      description: >
+        READY is required for a driver to appear in FR03's candidate
+        search (BRule02).
+
+    DriverStatus:
+      type: object
+      properties:
+        driverId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/DriverStatusValue'
+        updatedAt:
+          type: string
+          format: date-time
+
+    DriverStatusUpdateRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - READY
+            - UNAVAILABLE
+      required:
+        - status
+
+    VehicleCreateRequest:
+      type: object
+      properties:
+        vehicleType:
+          type: string
+          description: A code from FR02's GET /vehicle-types
+        licensePlate:
+          type: string
+        brand:
+          type: string
+        model:
+          type: string
+        color:
+          type: string
+      required:
+        - vehicleType
+        - licensePlate
+
+    VehicleUpdateRequest:
+      type: object
+      properties:
+        vehicleType:
+          type: string
+        licensePlate:
+          type: string
+        brand:
+          type: string
+        model:
+          type: string
+        color:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+
+    Vehicle:
+      type: object
+      properties:
+        vehicleId:
+          type: integer
+          format: int64
+        driverId:
+          type: integer
+          format: int64
+        vehicleType:
+          type: string
+        licensePlate:
+          type: string
+        brand:
+          type: string
+        model:
+          type: string
+        color:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+
+    CustomerAdminView:
+      type: object
+      properties:
+        customerId:
+          type: integer
+          format: int64
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          type: string
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        createdAt:
+          type: string
+          format: date-time
+
+    CustomerAdminUpdateRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+
+    CustomerAdminList:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerAdminView'
+
+    DriverAdminView:
+      type: object
+      properties:
+        driverId:
+          type: integer
+          format: int64
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        licenseNumber:
+          type: string
+        status:
+          $ref: '#/components/schemas/DriverStatusValue'
+        createdAt:
+          type: string
+          format: date-time
+
+    DriverAdminUpdateRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        licenseNumber:
+          type: string
+        status:
+          $ref: '#/components/schemas/DriverStatusValue'
+
+    DriverAdminList:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriverAdminView'
+
+    TripSummary:
+      type: object
+      properties:
+        tripId:
+          type: integer
+          format: int64
+        customerId:
+          type: integer
+          format: int64
+        driverId:
+          type: integer
+          format: int64
+        status:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+        pickupLocation:
+          type: string
+        destination:
+          type: string
+
+    TripSummaryList:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TripSummary'
+
+    IncidentStatus:
+      type: string
+      enum:
+        - OPEN
+        - RESOLVED
+
+    Incident:
+      type: object
+      properties:
+        incidentId:
+          type: integer
+          format: int64
+        tripId:
+          type: integer
+          format: int64
+        description:
+          type: string
+        reportedAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/IncidentStatus'
+        resolvedByStaffId:
+          type: integer
+          format: int64
+          nullable: true
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        resolutionNotes:
+          type: string
+          nullable: true
+
+    IncidentResolveRequest:
+      type: object
+      properties:
+        resolutionNotes:
+          type: string
+      required:
+        - resolutionNotes
+
+    IncidentList:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incident'
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
