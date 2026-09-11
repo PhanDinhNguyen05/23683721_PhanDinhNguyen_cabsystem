@@ -1,0 +1,299 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR12 Reporting
+  description: |
+    FR12 - Reporting module of the CAB System MVP.
+
+    Aggregates data owned by other modules (trips from FR05, fares from
+    FR07, ratings from FR10) into operational and per-driver performance
+    reports for admins/staff.
+
+    Traceability:
+    - Business Requirements: BR35 (Operational reporting: trip count,
+      revenue, completion/cancellation rate), BR36 (Driver performance
+      reporting)
+    - Use Cases: UC20 - View reports (Admin)
+    - Acceptance Criteria: AC35, AC36
+
+    Notes:
+    - This module is read-only and purely aggregates existing data; it
+      does not own or write Trip, Fare, or Rating records.
+    - AC35 requires the displayed figures to match the underlying source
+      data exactly, so all totals here are computed on read (or from a
+      consistently refreshed aggregate), never independently re-entered.
+    - UC20's exception flow ("khong co du lieu -> thong bao", "loi tong
+      hop -> thong bao, yeu cau thu lai") is modeled as: an empty range
+      returns a report with all figures at zero rather than an error,
+      while a genuine aggregation failure returns 500 so the client can
+      offer a retry.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Operations Report
+    description: Trip count, revenue, completion/cancellation rate (BR35)
+  - name: Driver Performance Report
+    description: Per-driver trip and rating performance (BR36)
+
+paths:
+  /reports/operations:
+    get:
+      summary: Get the operational report for a date range
+      description: >
+        UC20 steps 1-5 for the "operations" report type. Implements
+        AC35: given a time range, returns trip count, revenue,
+        completion rate, and cancellation rate matching the underlying
+        Trip/Fare data exactly. Optionally broken down by period via
+        groupBy.
+      operationId: getOperationsReport
+      tags:
+        - Operations Report
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: fromDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: groupBy
+          in: query
+          required: false
+          description: Optional breakdown granularity for the periods array
+          schema:
+            type: string
+            enum:
+              - day
+              - week
+              - month
+      responses:
+        '200':
+          description: >
+            Operational report for the requested range (all figures are
+            zero if there is no data in range, per UC20's exception flow)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsReport'
+        '400':
+          description: Invalid or missing date range (e.g. toDate before fromDate)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to view reports (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Aggregation failed; the client should offer to retry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /reports/operations/export:
+    get:
+      summary: Export the operational report as a downloadable file
+      description: >
+        UC20 step 6 - "xem/xuat bao cao". Same data as
+        GET /reports/operations, returned as a file for download instead
+        of inline JSON.
+      operationId: exportOperationsReport
+      tags:
+        - Operations Report
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: fromDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - csv
+              - pdf
+            default: csv
+      responses:
+        '200':
+          description: Report file
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid or missing date range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to view reports (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Aggregation or file generation failed; the client should offer to retry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /reports/drivers-performance:
+    get:
+      summary: Get driver performance report for a date range
+      description: >
+        UC20 for the "driver performance" report type. Implements AC36:
+        aggregates each driver's trip count, completion/cancellation
+        rate, revenue generated, and rating (from FR10) correctly by
+        driver.
+      operationId: getDriverPerformanceReport
+      tags:
+        - Driver Performance Report
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: fromDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: driverId
+          in: query
+          required: false
+          description: Limit the report to a single driver
+          schema:
+            type: integer
+            format: int64
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - totalTrips
+              - completionRate
+              - averageRating
+              - revenueGenerated
+            default: totalTrips
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: >
+            Page of per-driver performance records (empty list if there
+            is no data in range)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverPerformanceList'
+        '400':
+          description: Invalid or missing date range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to view reports (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: driverId provided but no such driver exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Aggregation failed; the client should offer to retry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    OperationsReportPeriod:
+      type: object
+      description: One row of the optional groupBy breakdown
+      properties:
+        periodStart:
+          type: string
+          format: date
+        totalTrips:
+          type: integer
+          format: int64
