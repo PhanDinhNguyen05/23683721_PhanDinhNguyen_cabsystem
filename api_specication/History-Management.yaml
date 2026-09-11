@@ -1,0 +1,526 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR14 History Management
+  description: |
+    FR14 - History Management module of the CAB System MVP. This is the
+    last of the 14 functional requirements (FR01-FR14).
+
+    Provides durable, searchable access to completed/cancelled trips (for
+    customers) and to transaction history (for operations staff), backed
+    by data owned by FR05 (Trip) and FR08 (Payment).
+
+    Traceability:
+    - Business Requirements: BR18 (Store trip history),
+      BR25 (Manage transaction history)
+    - Use Cases: UC11 - View trip history (Customer),
+      UC17 - Manage trips / look up transaction history (Staff)
+    - Acceptance Criteria: AC18, AC25
+
+    Notes:
+    - This module does not duplicate Trip or Payment data - it is the
+      query/lookup surface over records that FR05 and FR08 already
+      create and update. A trip/payment becomes visible here once it
+      reaches a final state (COMPLETED/CANCELLED/FAILED for trips;
+      SUCCESS/FAILED for payments).
+    - UC11's exception flow ("khong co du lieu -> thong bao chua co lich
+      su") is modeled as a normal 200 response with an empty items list,
+      not an error - there is nothing exceptional about a new customer
+      having no history yet.
+    - AC18/AC25 require the historical record to be complete and
+      accurate; this module intentionally exposes the same field set
+      FR05/FR08 already validated, rather than reshaping it.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Trip History (Customer)
+    description: A customer's own past trips (UC11)
+  - name: Transaction History (Staff)
+    description: Staff lookup across payment/transaction records (BR25, UC17)
+
+paths:
+  /customers/me/trips/history:
+    get:
+      summary: List the current customer's trip history
+      description: >
+        UC11 steps 1-3. Implements AC18: every completed or cancelled
+        trip belonging to the customer can be looked up here. Returns an
+        empty list (not an error) if the customer has no history yet.
+      operationId: getMyTripHistory
+      tags:
+        - Trip History (Customer)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter by final trip status
+          schema:
+            type: string
+            enum:
+              - COMPLETED
+              - CANCELLED
+              - FAILED
+        - name: fromDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: >
+            Page of the customer's historical trips (empty items array
+            if there is no history yet, per UC11's exception flow)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripHistoryList'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /customers/me/trips/history/{tripId}:
+    get:
+      summary: Get the full detail of one of the customer's past trips
+      description: >
+        UC11 step 4 - "chọn xem chi tiết". Returns the same level of
+        detail as FR05's live trip view, for a trip that has already
+        reached a final status and belongs to the calling customer.
+      operationId: getMyTripHistoryDetail
+      tags:
+        - Trip History (Customer)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Historical trip detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripHistoryDetail'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: This trip does not belong to the calling customer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: >
+            Trip not found, or not yet in a final status (still shows
+            under FR05's live tracking instead)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transactions:
+    get:
+      summary: Search transaction (payment) history
+      description: >
+        UC17 / BR25 - staff lookup of transaction history. Implements
+        AC25: results are complete and accurate for whatever combination
+        of filters staff apply, drawing on payment records created by
+        FR08.
+      operationId: searchTransactions
+      tags:
+        - Transaction History (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: customerId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: driverId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: paymentStatus
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - PENDING
+              - SUCCESS
+              - FAILED
+        - name: paymentMethod
+          in: query
+          required: false
+          description: A code from FR08's GET /payment-methods
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: >
+            Page of matching transactions (empty items array if nothing
+            matches the given filters)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionList'
+        '400':
+          description: Invalid filter combination (e.g. toDate before fromDate)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission to view transactions (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transactions/{paymentId}:
+    get:
+      summary: Get a single transaction's full detail (staff view)
+      description: >
+        UC17 / BR25. Returns the transaction together with enough trip
+        context (customer, driver) for support/reconciliation purposes -
+        unlike FR08's own GET /payments/{paymentId}, which is scoped to
+        the paying customer rather than staff lookup.
+      operationId: getTransactionById
+      tags:
+        - Transaction History (Staff)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Transaction found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDetail'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not staff with permission to view transactions (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TripHistorySummary:
+      type: object
+      description: One row of a customer's trip history list (UC11 step 3)
+      properties:
+        tripId:
+          type: integer
+          format: int64
+        pickupLocation:
+          type: string
+        destination:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum:
+            - COMPLETED
+            - CANCELLED
+            - FAILED
+        fare:
+          type: number
+          format: decimal
+          nullable: true
+
+    TripHistoryList:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TripHistorySummary'
+
+    TripHistoryDetail:
+      type: object
+      description: >
+        Same field set as FR05's Trip resource, for a trip that has
+        reached a final status
+      properties:
+        tripId:
+          type: integer
+          format: int64
+        bookingId:
+          type: integer
+          format: int64
+        customerId:
+          type: integer
+          format: int64
+        driverId:
+          type: integer
+          format: int64
+        vehicleId:
+          type: integer
+          format: int64
+        pickupLocation:
+          type: string
+        destination:
+          type: string
+        distance:
+          type: number
+          format: decimal
+          nullable: true
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum:
+            - COMPLETED
+            - CANCELLED
+            - FAILED
+        fare:
+          type: number
+          format: decimal
+          nullable: true
+        rating:
+          type: integer
+          format: int32
+          nullable: true
+          description: Sourced from FR10, if this trip was rated
+
+    TransactionSummary:
+      type: object
+      description: One row of a staff transaction search result
+      properties:
+        paymentId:
+          type: integer
+          format: int64
+        tripId:
+          type: integer
+          format: int64
+        customerId:
+          type: integer
+          format: int64
+        driverId:
+          type: integer
+          format: int64
+        paymentMethod:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        paymentStatus:
+          type: string
+          enum:
+            - PENDING
+            - SUCCESS
+            - FAILED
+        paymentTime:
+          type: string
+          format: date-time
+          nullable: true
+
+    TransactionList:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionSummary'
+
+    TransactionDetail:
+      type: object
+      description: >
+        Extends FR08's Payment with trip/customer/driver context needed
+        for staff lookup (BR25)
+      properties:
+        paymentId:
+          type: integer
+          format: int64
+        tripId:
+          type: integer
+          format: int64
+        customerId:
+          type: integer
+          format: int64
+        driverId:
+          type: integer
+          format: int64
+        pickupLocation:
+          type: string
+        destination:
+          type: string
+        paymentMethod:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        paymentTime:
+          type: string
+          format: date-time
+          nullable: true
+        paymentStatus:
+          type: string
+          enum:
+            - PENDING
+            - SUCCESS
+            - FAILED
+        transactionCode:
+          type: string
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
