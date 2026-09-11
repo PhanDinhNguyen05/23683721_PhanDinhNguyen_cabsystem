@@ -1,0 +1,818 @@
+openapi: 3.0.0
+info:
+  title: CAB System API - FR13 Permissions and Access Control
+  description: |
+    FR13 - Permissions and Access Control module of the CAB System MVP.
+
+    Manages staff/admin accounts, roles and permissions, and exposes the
+    audit log that every other module writes to. Every protected endpoint
+    across FR01-FR12 relies on this module's role/permission model for
+    its 401/403 behavior; this file defines that model and the
+    admin-facing screens to manage it (UC19).
+
+    Traceability:
+    - Business Requirements: BR04 (Manage access rights),
+      BR38 (Access control enforcement), BR39 (Protect data),
+      BR40 (Log important actions)
+    - Use Cases: UC19 - Manage accounts and permissions (Admin)
+    - Acceptance Criteria: AC04, AC38, AC39, AC40
+    - Business Rules: BRule11 (staff act only within their granted
+      permissions), BRule12 (every important action is written to the
+      Audit Log)
+
+    Open item (see B4.12 - needs BA/customer confirmation):
+    - The exact set of operational-staff permission levels is not yet
+      finalized. Roles/permissions are exposed as free-form codes (see
+      GET /permissions) rather than a hardcoded enum, so the concrete
+      permission taxonomy can be filled in once confirmed, without
+      changing this API's shape.
+
+    Notes:
+    - BR39/AC39 (protect data) is not a separate endpoint - it is
+      enforced by every module returning 401/403 per this role/
+      permission model, and by FR01's account endpoints never returning
+      passwords.
+    - BR40/AC40 (audit log) is read-only here by design: no PUT/DELETE
+      is exposed for log entries, so a regular user - or even an admin -
+      cannot alter or remove them via the API.
+    - Other modules (FR01/FR02/.../FR12) are expected to call an
+      internal audit-write path on every important action; this file
+      only exposes the read side plus the roles/permissions/staff-
+      account management that UC19 covers directly.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local server
+
+tags:
+  - name: Roles and Permissions
+    description: Available roles and permissions (BR04)
+  - name: Staff Accounts
+    description: Managing staff/admin accounts (UC19)
+  - name: Audit Log
+    description: Read-only log of important actions (BR40)
+
+paths:
+  /permissions:
+    get:
+      summary: List available permission codes
+      description: >
+        Supports BR04's role-based access model with an extensible set
+        of permission codes rather than a hardcoded enum, since the
+        exact operational-staff permission taxonomy is pending BA
+        confirmation (see B4.12).
+      operationId: listPermissions
+      tags:
+        - Roles and Permissions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of available permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to view this (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /roles:
+    get:
+      summary: List roles and the permissions each one grants
+      description: >
+        UC19 step 2 - "xem danh sách tài khoản/vai trò". Implements AC04:
+        the permission set for each role determines what that role's
+        accounts are allowed to do across the whole system.
+      operationId: listRoles
+      tags:
+        - Roles and Permissions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of roles with their granted permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to view this (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /roles/{roleCode}/permissions:
+    put:
+      summary: Set the permissions granted to a role
+      description: >
+        UC19 step 5 - "thiết lập quyền". Implements AC04: subsequent
+        access checks for accounts holding this role immediately reflect
+        the updated permission set.
+      operationId: updateRolePermissions
+      tags:
+        - Roles and Permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roleCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RolePermissionsUpdateRequest'
+      responses:
+        '200':
+          description: Role's permissions updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          description: One or more permission codes are invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to manage roles (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /staff-accounts:
+    get:
+      summary: List staff and admin accounts
+      description: >
+        UC19 steps 2-3 - view and search staff/admin accounts (as
+        opposed to FR11's customer/driver listings).
+      operationId: listStaffAccounts
+      tags:
+        - Staff Accounts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Free-text search on name, email, or phone
+          schema:
+            type: string
+        - name: roleCode
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AccountStatus'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Page of staff/admin accounts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffAccountList'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to manage accounts (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a new staff or admin account
+      description: >
+        UC19 step 4 - "tạo tài khoản". Same uniqueness rule as customer/
+        driver accounts (BRule01).
+      operationId: createStaffAccount
+      tags:
+        - Staff Accounts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffAccountCreateRequest'
+      responses:
+        '201':
+          description: Staff/admin account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffAccount'
+        '400':
+          description: Invalid input, or email/phone already exists (BRule01)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to manage accounts (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /staff-accounts/{staffId}:
+    get:
+      summary: Get a staff/admin account's details
+      operationId: getStaffAccountById
+      tags:
+        - Staff Accounts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: staffId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Staff/admin account found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffAccount'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to manage accounts (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a staff/admin account, including its role
+      description: >
+        UC19 step 4 - "cập nhật". Implements AC04: changing an account's
+        role immediately changes which permission set applies to it.
+      operationId: updateStaffAccount
+      tags:
+        - Staff Accounts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: staffId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffAccountUpdateRequest'
+      responses:
+        '200':
+          description: Staff/admin account updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffAccount'
+        '400':
+          description: Invalid input, or unknown role code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to manage accounts (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /staff-accounts/{staffId}/lock:
+    post:
+      summary: Lock a staff/admin account
+      description: UC19 step 4 - "khóa" an account, revoking its access immediately.
+      operationId: lockStaffAccount
+      tags:
+        - Staff Accounts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: staffId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Account locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffAccount'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to manage accounts (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Account is already locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /staff-accounts/{staffId}/unlock:
+    post:
+      summary: Unlock a staff/admin account
+      description: UC19 step 4 - "mở" a previously locked account.
+      operationId: unlockStaffAccount
+      tags:
+        - Staff Accounts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: staffId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Account unlocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffAccount'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to manage accounts (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Account is not currently locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /audit-logs:
+    get:
+      summary: List audit log entries
+      description: >
+        Read-only view of BR40/BRule12's audit trail, written to by every
+        other module on important actions (e.g. FR04 assignment, FR08
+        payment result, FR11 incident resolution, this module's own
+        account/role changes). Implements AC40: entries are complete and
+        cannot be modified or removed through this API.
+      operationId: listAuditLogs
+      tags:
+        - Audit Log
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          description: Filter by the user who performed the action
+          schema:
+            type: integer
+            format: int64
+        - name: action
+          in: query
+          required: false
+          description: Filter by action code (e.g. "TRIP_CANCELLED", "STAFF_ACCOUNT_LOCKED")
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Page of audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogList'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to view audit logs (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /audit-logs/{logId}:
+    get:
+      summary: Get a single audit log entry
+      operationId: getAuditLogById
+      tags:
+        - Audit Log
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: logId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Audit log entry found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogEntry'
+        '401':
+          description: Not authenticated (AC37)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller is not an admin with permission to view audit logs (BR38)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Log entry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AccountStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - LOCKED
+
+    Permission:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Stable identifier (e.g. "MANAGE_CUSTOMERS", "VIEW_REPORTS")
+        displayName:
+          type: string
+        description:
+          type: string
+
+    Role:
+      type: object
+      properties:
+        roleCode:
+          type: string
+          description: Stable identifier (e.g. "OPERATIONS_STAFF", "ADMIN")
+        displayName:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+          description: Permission codes granted to this role
+
+    RolePermissionsUpdateRequest:
+      type: object
+      properties:
+        permissions:
+          type: array
+          items:
+            type: string
+          description: Full replacement list of permission codes for this role
+      required:
+        - permissions
+
+    StaffAccountCreateRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        password:
+          type: string
+          format: password
+        roleCode:
+          type: string
+      required:
+        - fullName
+        - email
+        - phone
+        - password
+        - roleCode
+
+    StaffAccountUpdateRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        roleCode:
+          type: string
+
+    StaffAccount:
+      type: object
+      description: Maps to the Staff entity (B9.1)
+      properties:
+        staffId:
+          type: integer
+          format: int64
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        roleCode:
+          type: string
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+
+    StaffAccountList:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffAccount'
+
+    AuditLogEntry:
+      type: object
+      description: Maps to the AuditLog entity (B9.1)
+      properties:
+        logId:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        action:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        ipAddress:
+          type: string
+
+    AuditLogList:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogEntry'
+
+    Error:
+      type: object
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
